@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import rospy
+from migrave_action_recognition_wrapper.action_recognition_wrapper import ActionRecognitionWrapper
+
+if __name__ == '__main__':
+    rospy.init_node("action_recognizer")
+    rospy.Rate(2)
+    rospy.loginfo("Action recognizer node is running...")
+    action_recognizer = ActionRecognitionWrapper()
+
+    try:
+        while not rospy.is_shutdown():
+            action_recognizer.run()
+            rospy.sleep(0.05)
+    except rospy.ROSInterruptException as exc:
+        print("Action recognizer exiting...")

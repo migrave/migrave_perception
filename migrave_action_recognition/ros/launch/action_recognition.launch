@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="debug" default="true" />
+    <arg name="skeleton_topic" default="/qt_nuitrack_app/skeletons" />
+
+    <node pkg="migrave_action_recognition" type="action_recognizer" name="action_recognizer" output="screen" 
+     ns="migrave_peception" >
+        <param name="config_path" type="str" value="$(find migrave_action_recognition)/ros/config/action_recognition_config.yaml" />
+        <param name="skeleton_topic" type="str" value="$(arg skeleton_topic)" />
+        <param name="debug" type="bool" value="$(arg debug)" />
+    </node>
+</launch>
