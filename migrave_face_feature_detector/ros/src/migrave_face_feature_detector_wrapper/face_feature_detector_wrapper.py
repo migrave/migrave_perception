@@ -7,10 +7,11 @@ from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose, Point, Vector3
 from std_msgs.msg import String
 from migrave_ros_msgs.msg import AffectiveState, AudioFeatures, Face, FaceActionUnit
+from qt_nuitrack_app.msg import Faces
 
 from migrave_face_feature_detector.face_feature_detector import FaceFeatures
-from migrave_common_ros_utils import vision_utils as ros_vision_utils
-from migrave_common_utils import file_utils
+from migrave_common_ros import vision_utils as ros_vision_utils
+from migrave_common import file_utils
 
 
 class FaceFeatureDetectorWrapper(object):
@@ -60,23 +61,10 @@ class FaceFeatureDetectorWrapper(object):
 
         left_gaze = Vector3()
         right_gaze = Vector3()
-        left_gaze.x = 0.0
-        left_gaze.y = 0.0
-        left_gaze.z = 0.0
-        right_gaze.x = 0.0
-        right_gaze.y = 0.0
-        right_gaze.z = 0.0
         face.left_gaze = left_gaze
         face.right_gaze = right_gaze
 
         head_pose = Pose()
-        head_pose.position.x = 0.0
-        head_pose.position.y = 0.0
-        head_pose.position.z = 0.0
-        head_pose.orientation.x = 0.0
-        head_pose.orientation.y = 0.0
-        head_pose.orientation.z = 0.0
-        head_pose.orientation.w = 1.0
         face.head_pose = head_pose
 
         landmarks_3d = Point()
@@ -88,7 +76,7 @@ class FaceFeatureDetectorWrapper(object):
         face.action_units = [action_units]
 
         self._pub_face_feature.publish(face)
-        
+
     def event_callback(self, data: String) -> None:
         event_out_data = String()
         if data.data == "e_start":
