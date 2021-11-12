@@ -119,56 +119,56 @@ void OpenFaceROS::initializeOpenFace()
   std::vector<std::string> arguments(1,"");
   LandmarkDetector::FaceModelParameters det_params(arguments);
 
-	// This is so that the model would not try re-initialising itself
-	det_params.reinit_video_every = -1;
-	det_params.curr_face_detector = LandmarkDetector::FaceModelParameters::MTCNN_DETECTOR;
+  // This is so that the model would not try re-initialising itself
+  det_params.reinit_video_every = -1;
+  det_params.curr_face_detector = LandmarkDetector::FaceModelParameters::MTCNN_DETECTOR;
 
-	//std::vector<LandmarkDetector::FaceModelParameters> det_parameters;
-	det_parameters_.push_back(det_params);
+  //std::vector<LandmarkDetector::FaceModelParameters> det_parameters;
+  det_parameters_.push_back(det_params);
 
-	LandmarkDetector::CLNF face_model(det_parameters_[0].model_location);
+  LandmarkDetector::CLNF face_model(det_parameters_[0].model_location);
 
-	if (!face_model.loaded_successfully)
-	{
-		ROS_ERROR("Could not load the landmark detector");
-		return;
-	}
+  if (!face_model.loaded_successfully)
+  {
+    ROS_ERROR("Could not load the landmark detector");
+    return;
+  }
 
-	// Loading the face detectors
-	face_model.face_detector_HAAR.load(det_parameters_[0].haar_face_detector_location);
-	face_model.haar_face_detector_location = det_parameters_[0].haar_face_detector_location;
-	face_model.face_detector_MTCNN.Read(det_parameters_[0].mtcnn_face_detector_location);
-	face_model.mtcnn_face_detector_location = det_parameters_[0].mtcnn_face_detector_location;
+  // Loading the face detectors
+  face_model.face_detector_HAAR.load(det_parameters_[0].haar_face_detector_location);
+  face_model.haar_face_detector_location = det_parameters_[0].haar_face_detector_location;
+  face_model.face_detector_MTCNN.Read(det_parameters_[0].mtcnn_face_detector_location);
+  face_model.mtcnn_face_detector_location = det_parameters_[0].mtcnn_face_detector_location;
 
-	// If can't find MTCNN face detector, default to HOG one
-	if (det_parameters_[0].curr_face_detector == LandmarkDetector::FaceModelParameters::MTCNN_DETECTOR 
+  // If can't find MTCNN face detector, default to HOG one
+  if (det_parameters_[0].curr_face_detector == LandmarkDetector::FaceModelParameters::MTCNN_DETECTOR 
       && face_model.face_detector_MTCNN.empty())
-	{
-		ROS_INFO("Defaulting to HOG-SVM face detector");
-		det_parameters_[0].curr_face_detector = LandmarkDetector::FaceModelParameters::HOG_SVM_DETECTOR;
-	}
+  {
+    ROS_INFO("Defaulting to HOG-SVM face detector");
+    det_parameters_[0].curr_face_detector = LandmarkDetector::FaceModelParameters::HOG_SVM_DETECTOR;
+  }
 
-	face_models_.reserve(max_faces_);
+  face_models_.reserve(max_faces_);
 
-	face_models_.push_back(face_model);
-	active_models_.push_back(false);
+  face_models_.push_back(face_model);
+  active_models_.push_back(false);
 
-	for (int i = 1; i < max_faces_; ++i)
-	{
-		face_models_.push_back(face_model);
-		active_models_.push_back(false);
-		det_parameters_.push_back(det_params);
-	}
+  for (int i = 1; i < max_faces_; ++i)
+  {
+    face_models_.push_back(face_model);
+    active_models_.push_back(false);
+    det_parameters_.push_back(det_params);
+  }
 
-	if (!face_model.eye_model)
-	{
-		ROS_WARN("No eye model found");
-	}
+  if (!face_model.eye_model)
+  {
+    ROS_WARN("No eye model found");
+  }
 
-	if (face_analyser_->GetAUClassNames().size() == 0)
-	{
-		ROS_WARN("No Action Unit models found");
-	}
+  if (face_analyser_->GetAUClassNames().size() == 0)
+  {
+    ROS_WARN("No Action Unit models found");
+  }
 
   // OpenFace visualizer
   of_visualizer_ = OFVisualizerPtr(new Utilities::Visualizer(true, false, false, true));
@@ -178,62 +178,62 @@ void OpenFaceROS::initializeOpenFace()
 
 double OpenFaceROS::getIOU(cv::Rect_<float> rect1, cv::Rect_<float> rect2)
 {
-	double intersection_area = (rect1 & rect2).area();
-	double union_area = rect1.area() + rect2.area() - intersection_area;
-	return intersection_area / union_area;
+  double intersection_area = (rect1 & rect2).area();
+  double union_area = rect1.area() + rect2.area() - intersection_area;
+  return intersection_area / union_area;
 }
 
 void OpenFaceROS::nonOverlapingDetections(const std::vector<LandmarkDetector::CLNF>& clnf_models, 
                                        std::vector<cv::Rect_<float> >& face_detections)
 {
-	// Go over the model and eliminate detections that are not informative 
+  // Go over the model and eliminate detections that are not informative 
   // (there already is a tracker there)
-	for (size_t model = 0; model < clnf_models.size(); ++model)
-	{
+  for (size_t model = 0; model < clnf_models.size(); ++model)
+  {
 
-		// See if the detections intersect
-		cv::Rect_<float> model_rect = clnf_models[model].GetBoundingBox();
+    // See if the detections intersect
+    cv::Rect_<float> model_rect = clnf_models[model].GetBoundingBox();
 
-		for (int detection = face_detections.size() - 1; detection >= 0; --detection)
-		{
-			// If the model is already tracking what we're detecting ignore the detection, 
+    for (int detection = face_detections.size() - 1; detection >= 0; --detection)
+    {
+      // If the model is already tracking what we're detecting ignore the detection, 
       // this is determined by amount of overlap
-			if (OpenFaceROS::getIOU(model_rect, face_detections[detection]) > 0.5)
-			{
-				face_detections.erase(face_detections.begin() + detection);
-			}
-		}
-	}
+      if (OpenFaceROS::getIOU(model_rect, face_detections[detection]) > 0.5)
+      {
+        face_detections.erase(face_detections.begin() + detection);
+      }
+    }
+  }
 }
 
 void OpenFaceROS::removeOverlapingModels(std::vector<LandmarkDetector::CLNF>& face_models, 
                                               std::vector<bool>& active_models)
 {
-	// Go over the model and eliminate detections that are not informative (there already is a tracker there)
-	for (size_t model1 = 0; model1 < active_models.size(); ++model1)
-	{
-		if (active_models[model1])
-		{
-			// See if the detections intersect
-			cv::Rect_<float> model1_rect = face_models[model1].GetBoundingBox();
+  // Go over the model and eliminate detections that are not informative (there already is a tracker there)
+  for (size_t model1 = 0; model1 < active_models.size(); ++model1)
+  {
+    if (active_models[model1])
+    {
+      // See if the detections intersect
+      cv::Rect_<float> model1_rect = face_models[model1].GetBoundingBox();
 
-			for (int model2 = model1 + 1; model2 < active_models.size(); ++model2)
-			{
-				if(active_models[model2])
-				{
-					cv::Rect_<float> model2_rect = face_models[model2].GetBoundingBox();
+      for (int model2 = model1 + 1; model2 < active_models.size(); ++model2)
+      {
+        if(active_models[model2])
+        {
+          cv::Rect_<float> model2_rect = face_models[model2].GetBoundingBox();
 
-					// If the model is already tracking what we're detecting ignore 
+          // If the model is already tracking what we're detecting ignore 
           // the detection, this is determined by amount of overlap
-					if (OpenFaceROS::getIOU(model1_rect, model2_rect) > 0.5)
-					{
-						active_models[model1] = false;
-						face_models[model1].Reset();
-					}
-				}
-			}
-		}
-	}
+          if (OpenFaceROS::getIOU(model1_rect, model2_rect) > 0.5)
+          {
+            active_models[model1] = false;
+            face_models[model1].Reset();
+          }
+        }
+      }
+    }
+  }
 }
 
 // Some codes are based on FaceLandmarkVidMulti example
