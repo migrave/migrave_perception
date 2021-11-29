@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="rgb_image_topic" default="/camera/rgb/image_raw" />
+    <arg name="rgb_image_topic" default="/camera/color/image_raw" />
     <arg name="depth_image_topic" default="/camera/depth/image_raw" />
     <arg name="cam_info_topic" default="/camera/rgb/camera_info" />
     <arg name="debug" default="true" />
     <arg name="demo" default="true" />
     
     <node pkg="migrave_face_feature_detector" type="face_feature_detector" name="face_feature_detector" output="screen" 
-     ns="migrave_peception" >
+     ns="migrave_perception" >
         <param name="config_path" type="str" value="$(find migrave_face_feature_detector)/ros/config/face_feature_detector_config.yaml" />
         <param name="~rgb_image_topic" type="str" value="$(arg rgb_image_topic)" />
         <param name="~depth_image_topic" type="str" value="$(arg depth_image_topic)" />
@@ -16,7 +16,7 @@
     </node>
 
     <node pkg="migrave_face_feature_detector" type="openface_ros" name="openface_ros" output="screen" 
-     ns="migrave_peception" >
+     ns="migrave_perception" >
         <param name="~rgb_image_topic" type="str" value="$(arg rgb_image_topic)" />
         <param name="~cam_info_topic" type="str" value="$(arg cam_info_topic)" />
     </node>
