@@ -40,6 +40,14 @@ OpenFaceROS::OpenFaceROS(ros::NodeHandle &nh):
 
   nh_.param<std::string>("rgb_image_topic", rgb_image_topic_, "/camera/color/image_raw");
 
+  // Load camera parameters
+  nh_.param<double>("fx", fx_, 0.0);
+  nh_.param<double>("fy", fy_, 0.0);
+  nh_.param<double>("cx", cx_, 0.0);
+  nh_.param<double>("cy", cy_, 0.0);
+
+  std::cout<<fx_<<", "<<fy_<<std::endl;
+
   pub_debug_img_ = nh_.advertise<sensor_msgs::Image>("debug_image", 1);
 
   initializeOpenFace();
@@ -278,12 +286,12 @@ void OpenFaceROS::trackFaces()
   }
   
   // example code run detection every 8th frame
+  std::vector<float> confidences;
   if(!all_models_active)
   {
     ROS_DEBUG_STREAM("Start tracking face, model:" << det_parameters_[0].curr_face_detector);
     if (det_parameters_[0].curr_face_detector == LandmarkDetector::FaceModelParameters::HOG_SVM_DETECTOR)
     {
-      std::vector<float> confidences;
       LandmarkDetector::DetectFacesHOG(face_detections, 
                                         cv_image_mono->image, 
                                         face_models_[0].face_detector_HOG, 
@@ -297,13 +305,13 @@ void OpenFaceROS::trackFaces()
     }
     else
     {
-      std::vector<float> confidences;
       LandmarkDetector::DetectFacesMTCNN(face_detections, 
                                           cv_image->image, 
                                           face_models_[0].face_detector_MTCNN, 
                                           confidences);
     }
   }
+  std::cout<<"Confidences: "<<confidences.size()<<std::endl;
 
   // Keep only non overlapping detections (also convert to a concurrent vector
   OpenFaceROS::nonOverlapingDetections(face_models_, face_detections);
@@ -552,6 +560,9 @@ void OpenFaceROS::trackFaces()
                                     eye_landmarks3d, 
                                     face_models_[model].detection_certainty);
       of_visualizer_->SetObservationActionUnits(aus_reg, aus_class);
+
+      // uppdate confidence
+      //face.detection_confidence = 
       faces.faces.push_back(face);
     }
   }

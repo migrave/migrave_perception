@@ -19,5 +19,6 @@
      ns="migrave_perception" >
         <param name="~rgb_image_topic" type="str" value="$(arg rgb_image_topic)" />
         <param name="~cam_info_topic" type="str" value="$(arg cam_info_topic)" />
+        <rosparam file="$(find migrave_face_feature_detector)/ros/config/camera_parameters.yaml" command="load" />
     </node>
 </launch>
