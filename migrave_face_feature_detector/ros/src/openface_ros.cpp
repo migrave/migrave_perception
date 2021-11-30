@@ -46,8 +46,6 @@ OpenFaceROS::OpenFaceROS(ros::NodeHandle &nh):
   nh_.param<double>("cx", cx_, 0.0);
   nh_.param<double>("cy", cy_, 0.0);
 
-  std::cout<<fx_<<", "<<fy_<<std::endl;
-
   pub_debug_img_ = nh_.advertise<sensor_msgs::Image>("debug_image", 1);
 
   initializeOpenFace();
