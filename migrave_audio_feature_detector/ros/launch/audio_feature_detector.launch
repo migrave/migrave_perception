@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="config_file_path" default="$(find migrave_audio_feature_detector)/config/audio_config.yaml" />
+    <arg name="audio_data_topic" default="/qt_respeaker_app/channel0" />
+    <arg name="feature_topic" default="/migrave_perception/audio_feature_detector/features" />
+    <arg name="debug" default="true" />
+
+    <node pkg="migrave_audio_feature_detector" type="audio_feature_detector" name="audio_feature_detector" output="screen"
+     ns="migrave_perception" >
+        <param name="config_file_path" type="str" value="$(arg config_file_path)" />
+        <param name="feature_topic" type="str" value="$(arg feature_topic)" />
+        <param name="audio_data_topic" type="str" value="$(arg audio_data_topic)" />
+        <param name="debug" type="bool" value="$(arg debug)" />
+    </node>
+</launch>
