@@ -378,6 +378,7 @@ void OpenFaceROS::trackFaces()
   faces.header.frame_id = image_msg_->header.frame_id;
   faces.header.stamp = ros::Time::now();
 
+  int number_of_active_models = 0;
   // Go through every model and detect eye gaze, record results
   for (size_t model = 0; model < face_models_.size(); ++model)
   {
@@ -566,16 +567,20 @@ void OpenFaceROS::trackFaces()
       face.debug_image = *of_debug_image;
       // uppdate confidence
       faces.faces.push_back(face);
+
+      number_of_active_models++;
     }
   }
-  pub_faces_.publish(faces);
-  
-  ROS_DEBUG("Detected faces: %d", faces.faces.size());
-  of_visualizer_->SetFps(of_fps_tracker_.GetFPS());
-  auto viz_msg = cv_bridge::CvImage(cv_image->header, 
-                                    "bgr8", 
-                                    of_visualizer_->GetVisImage()).toImageMsg();
-  pub_debug_img_.publish(viz_msg);
+  if (number_of_active_models > 0)
+  {
+    pub_faces_.publish(faces);
+    ROS_DEBUG("Detected faces: %d", faces.faces.size());
+    of_visualizer_->SetFps(of_fps_tracker_.GetFPS());
+    auto viz_msg = cv_bridge::CvImage(cv_image->header,
+                                      "bgr8",
+                                      of_visualizer_->GetVisImage()).toImageMsg();
+    pub_debug_img_.publish(viz_msg);
+  }
 }
 
 int main(int argc, char **argv)
