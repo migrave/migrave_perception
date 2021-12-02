@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>migrave_audio_feature_detector</name>
+  <version>1.0.0</version>
+  <description>A package for extracting audio feature from a person</description>
+
+  <author email="aleksandar.mitrevski@h-brs.de">Alex Mitrevski</author>
+  <author email="michal.stolarz@smail.inf.h-brs.de">Michal Stolarz</author>
+  <maintainer email="robotics@h-brs.de">MAS robotics</maintainer>
+
+  <license>GPLv3</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>audio_common_msgs</build_depend>
+  <build_depend>migrave_ros_msgs</build_depend>
+
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>audio_common_msgs</build_export_depend>
+  <build_export_depend>migrave_ros_msgs</build_export_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>audio_common_msgs</exec_depend>
+  <exec_depend>migrave_ros_msgs</exec_depend>
+
+  <export>
+  </export>
+</package>
