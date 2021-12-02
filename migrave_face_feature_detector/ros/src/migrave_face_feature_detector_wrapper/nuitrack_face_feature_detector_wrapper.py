@@ -1,32 +1,30 @@
 import os
+
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
-
-from std_msgs.msg import Header
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import Pose, Point, Vector3
-from std_msgs.msg import String
-from migrave_ros_msgs.msg import AffectiveState, AudioFeatures, Face, FaceActionUnit
-from qt_nuitrack_app.msg import Faces
-
-from migrave_face_feature_detector.face_feature_detector import FaceFeatures
-from migrave_common_ros import vision_utils as ros_vision_utils
+from geometry_msgs.msg import Point, Pose, Vector3
 from migrave_common import file_utils
+from migrave_common_ros import vision_utils as ros_vision_utils
+from migrave_face_feature_detector.face_feature_detector import FaceFeatures
+from migrave_ros_msgs.msg import (AffectiveState, AudioFeatures, Face,
+                                  FaceActionUnit)
+from qt_nuitrack_app.msg import Faces
+from sensor_msgs.msg import Image
+from std_msgs.msg import Header, String
 
 
-class FaceFeatureDetectorWrapper(object):
+class NuitrackFaceFeatureDetectorWrapper(object):
 
     def __init__(self):
         self._config_file = rospy.get_param("~config_path", None)
-
-        if not self._config_file or os.path.isfile(self._config_file):
+        if not self._config_file and not os.path.isfile(self._config_file):
             rospy.logerr("Config file is not given or does not exist")
 
         self._config = file_utils.parse_yaml_config(self._config_file)
         self._debug = rospy.get_param("~debug", False) 
         self._demo = rospy.get_param("~demo", False) 
 
-        self._rgb_image = rospy.get_param("~rgb_image_topic", "/camera/rgb/image_raw") 
+        self._rgb_image = rospy.get_param("~rgb_image_topic", "/camera/color/image_raw") 
         self._depth_image = rospy.get_param("~rgb_depth_topic", "/camera/depth/image_raw") 
         self._camera_frame_id = rospy.get_param("~camera_frame_id", "camera_rgb_optical_frame") 
 
@@ -81,7 +79,6 @@ class FaceFeatureDetectorWrapper(object):
         event_out_data = String()
         if data.data == "e_start":
             self._sub_rgb_image = rospy.Subscriber(self._rgb_image, Image, self.rgb_image_cb)
-            # self._sub_depth_image = rospy.Subscriber(self._depth_image, Image, self.depth_image_cb)
 
             event_out_data.data = "e_started"
             self._pub_event.publish(event_out_data)
@@ -90,7 +87,7 @@ class FaceFeatureDetectorWrapper(object):
             event_out_data.data = "e_stopped"
             self._pub_event.publish(event_out_data)
 
-    def run(self) -> None:
+    def initialize(self) -> None:
         #start event in and out
         self._sub_event = rospy.Subscriber("~event_in", String, self.event_callback)
         self._pub_event = rospy.Publisher("~event_out", String, queue_size=1)
