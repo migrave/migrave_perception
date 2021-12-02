@@ -26,7 +26,7 @@
 
 OpenFaceROS::OpenFaceROS(ros::NodeHandle &nh):
   nh_(nh),
-  max_faces_(2),
+  max_faces_(4),
   image_msg_received_(false),
   camera_info_received_(false),
   continuous_tracking_(true)
@@ -179,7 +179,7 @@ void OpenFaceROS::initializeOpenFace()
   // OpenFace visualizer
   of_visualizer_ = OFVisualizerPtr(new Utilities::Visualizer(true, false, false, true));
 
-  ROS_INFO("OpenFace initialized!");
+  ROS_INFO_STREAM("\033[1;32m OpenFace initialized...! \033[0m\n");
 }
 
 double OpenFaceROS::getIOU(cv::Rect_<float> rect1, cv::Rect_<float> rect2)
@@ -309,7 +309,6 @@ void OpenFaceROS::trackFaces()
                                           confidences);
     }
   }
-  std::cout<<"Confidences: "<<confidences.size()<<std::endl;
 
   // Keep only non overlapping detections (also convert to a concurrent vector
   OpenFaceROS::nonOverlapingDetections(face_models_, face_detections);
@@ -548,25 +547,30 @@ void OpenFaceROS::trackFaces()
         if(p.y > max.y) max.y = p.y;
       }
 
-      of_visualizer_->SetObservationLandmarks(face_models_[model].detected_landmarks, 
-                                          face_models_[model].detection_certainty);
-      of_visualizer_->SetObservationPose(LandmarkDetector::GetPose(face_models_[model], fx_, fy_, cx_, cy_), 
-                                    face_models_[model].detection_certainty);
-      of_visualizer_->SetObservationGaze(gaze_direction0, 
-                                    gaze_direction1, 
-                                    LandmarkDetector::CalculateAllEyeLandmarks(face_models_[model]),
-                                    eye_landmarks3d, 
-                                    face_models_[model].detection_certainty);
+      of_visualizer_->SetObservationLandmarks(face_models_[model].detected_landmarks,
+                                              face_models_[model].detection_certainty);
+      of_visualizer_->SetObservationPose(LandmarkDetector::GetPose(face_models_[model],
+                                                                   fx_, fy_, cx_, cy_),
+                                                                   face_models_[model].detection_certainty);
+      of_visualizer_->SetObservationGaze(gaze_direction0,
+                                         gaze_direction1,
+                                         LandmarkDetector::CalculateAllEyeLandmarks(face_models_[model]),
+                                         eye_landmarks3d,
+                                         face_models_[model].detection_certainty);
       of_visualizer_->SetObservationActionUnits(aus_reg, aus_class);
 
+      of_visualizer_->SetFps(of_fps_tracker_.GetFPS());
+      auto of_debug_image = cv_bridge::CvImage(cv_image->header,
+                                              "bgr8",
+                                               of_visualizer_->GetVisImage()).toImageMsg();
+      face.debug_image = *of_debug_image;
       // uppdate confidence
-      //face.detection_confidence = 
       faces.faces.push_back(face);
     }
   }
   pub_faces_.publish(faces);
   
-  ROS_INFO("Detected faces: %d", faces.faces.size());
+  ROS_DEBUG("Detected faces: %d", faces.faces.size());
   of_visualizer_->SetFps(of_fps_tracker_.GetFPS());
   auto viz_msg = cv_bridge::CvImage(cv_image->header, 
                                     "bgr8", 
