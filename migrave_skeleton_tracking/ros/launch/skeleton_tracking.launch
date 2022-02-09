@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="cloud_image_topic" default="/camera/depth_registered/points" />
+  <arg name="rgb_image_topic" default="/camera/rgb/image_raw" />
+  <arg name="cam_info_topic" default="/camera/rgb/camera_info" />
+  <arg name="frame_id" default="camera_rgb_optical_frame" />
+  <arg name="continuous_tracking" default="true" />
+
+  <!-- full path to the model dir of openpose along with its args-->
+  <arg name="op_model_path" default="/home/mhwasil/ros_catkin_ws/src/migrave/openpose/models/" />
+  <arg name="openpose_args" value="--model_folder $(arg op_model_path) 
+                                   --net_resolution -1x256 
+                                   --camera_resolution 640x480 
+                                   --output_resolution 640x480
+                                   --display 0 " />
+
+  <node pkg="migrave_skeleton_tracking" type="openpose_ros" name="openpose_ros" 
+   output="screen" respawn="false" args="$(arg openpose_args)" ns="migrave_perception">
+    <remap from="~cloud_image_topic" to="$(arg cloud_image_topic)" />
+    <remap from="~rgb_image_topic" to="$(arg rgb_image_topic)" />
+    <param name="continuous_tracking" value="$(arg continuous_tracking)" type="bool" />
+    <param name="target_frame_id" value="$(arg frame_id)" type="str" />
+  </node>
+
+</launch>
