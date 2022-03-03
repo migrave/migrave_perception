@@ -30,9 +30,9 @@ find_package(Eigen3 REQUIRED)
 find_package(PCL 1.10 REQUIRED)
 
 ## Pass in the version of OpenPose
-add_definitions( -DOpenPose_VERSION_MAJOR=${OpenPose_VERSION_MAJOR} )
-add_definitions( -DOpenPose_VERSION_MINOR=${OpenPose_VERSION_MINOR} )
-add_definitions( -DOpenPose_VERSION_PATCH=${OpenPose_VERSION_PATCH} )
+add_definitions(-DOpenPose_VERSION_MAJOR=${OpenPose_VERSION_MAJOR})
+add_definitions(-DOpenPose_VERSION_MINOR=${OpenPose_VERSION_MINOR})
+add_definitions(-DOpenPose_VERSION_PATCH=${OpenPose_VERSION_PATCH})
 
 ## Print OpenPose version in the terminal
 MESSAGE(STATUS "OpenPose VERSION: " ${OpenPose_VERSION})
@@ -58,8 +58,8 @@ include_directories(
 )
 
 ### LIRBARIES
-## Path to Caffe lib i.e., libcaffe.so
-set(CAFFE_LIB_FOLDER /opt/openpose/caffe/lib)
+## Path to Caffe lib
+set(CAFFE_LIB_FOLDER /usr/local/include/caffe/lib)
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${CAFFE_LIB_FOLDER}
