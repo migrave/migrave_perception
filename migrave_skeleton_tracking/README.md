@@ -20,7 +20,6 @@ This repository contains a ROS wrapper for skeleton tracking using [OpenPose](ht
     # we will use sudo since we want to install openpose binaries to /opt/openpose
     cmake-gui ..
     ```
-    * Change the target directory to built the binaries to `/opt/openpose/build`
     * Press configure and it will pop up CMakeSetup window and then select Unix Makefiles and default native compilers. It will show avalaible options such as GPU_MODE, and supported libraries
       * If there is no GPU, select `CPU_ONLY` in `GPU_MODE`, and then press `Configure` again.
         If `CPU_ONLY` is chosen, select `DOWNLOAD_BODY_COCO_MODEL` as well since it runs faster on CPU, see this [optimization page](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/06_maximizing_openpose_speed.md) for more details.
@@ -68,6 +67,10 @@ This repository contains a ROS wrapper for skeleton tracking using [OpenPose](ht
   Adjust `-net_resolution` if you have OOM problems.
 
 ### Usage
+* Launch OpenPose ROS wrapper
+  ```
+  roslaunch migrave_skeleton_tracking skeleton_tracking.launch
+  ```
 * Start tracking
   ```
   rostopic pub /migrave_perception/openpose_ros/event_in std_msgs/String e_start
