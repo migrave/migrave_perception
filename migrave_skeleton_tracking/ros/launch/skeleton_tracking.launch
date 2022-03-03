@@ -7,9 +7,9 @@
   <arg name="continuous_tracking" default="true" />
 
   <!-- full path to the model dir of openpose along with its args-->
-  <arg name="op_model_path" default="/home/mhwasil/ros_catkin_ws/src/migrave/openpose/models/" />
+  <arg name="op_model_path" default="/opt/openpose/models/" />
   <arg name="openpose_args" value="--model_folder $(arg op_model_path) 
-                                   --net_resolution -1x256 
+                                   --net_resolution -1x256
                                    --camera_resolution 640x480 
                                    --output_resolution 640x480
                                    --display 0 " />
