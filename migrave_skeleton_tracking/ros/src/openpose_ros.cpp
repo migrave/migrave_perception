@@ -63,9 +63,10 @@ void OpenPoseROS::eventCallback(const std_msgs::String::ConstPtr &msg)
   }
   if (msg->data == "e_stop")
   {
-    //continuous_tracking_ = false;
-    image_sub_->unsubscribe();
-    cloud_sub_->unsubscribe();
+    // FIXME: if message filter subscribe has not been initialized and e_stop is sent, 
+    // this node will die
+    if (image_sub_) image_sub_->unsubscribe();
+    if (cloud_sub_) cloud_sub_->unsubscribe();
 
     event_out.data = "e_stopped";
     pub_event_out_.publish(event_out); 
@@ -120,7 +121,7 @@ void OpenPoseROS::get3DPose(const key_points &kp,
                             const PointCloud::ConstPtr &cloud,
                             migrave_ros_msgs::BodyPart &part) 
 {
-  // Return if the prob <= 0.0
+  // Only take key point with prob > 0
   if (kp[i+2] <= 0.0) return;
 
   // Check if the key point is within the image res, otherwise skip
