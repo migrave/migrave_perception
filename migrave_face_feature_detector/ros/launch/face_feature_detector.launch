@@ -5,14 +5,6 @@
     <arg name="cam_info_topic" default="/camera/rgb/camera_info" />
     <arg name="debug" default="true" />
     
-    <node pkg="migrave_face_feature_detector" type="nuitrack_face_feature_detector" name="nuitrack_face_feature_detector" output="screen" 
-     ns="migrave_perception" >
-        <param name="~config_path" type="str" value="$(find migrave_face_feature_detector)/ros/config/face_feature_detector_config.yaml" />
-        <param name="~rgb_image_topic" type="str" value="$(arg rgb_image_topic)" />
-        <param name="~depth_image_topic" type="str" value="$(arg depth_image_topic)" />
-        <param name="~debug" type="bool" value="$(arg debug)" />
-    </node>
-
     <node pkg="migrave_face_feature_detector" type="openface_ros" name="openface_ros" output="screen" 
      ns="migrave_perception" >
         <param name="~rgb_image_topic" type="str" value="$(arg rgb_image_topic)" />
