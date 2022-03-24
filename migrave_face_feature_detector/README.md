@@ -20,7 +20,7 @@ This package contains a ROS wrapper for face feature detector using [OpenFace](h
   * Install [Dlib 19.22](http://dlib.net/files)
     ```
     wget http://dlib.net/files/dlib-19.22.tar.bz2;
-    tar dlib-19.22.tar.bz2;
+    tar sxvf dlib-19.22.tar.bz2;
     cd dlib-19.22;
     mkdir build;
     cd build;
@@ -59,7 +59,7 @@ This package contains a ROS wrapper for face feature detector using [OpenFace](h
       sudo mkdir /usr/local/etc/OpenFace/model/patch_experts/
 
       # Move all models to patch_experts dir
-      sudo move cen_patches_0.* /usr/local/etc/OpenFace/model/patch_experts/
+      sudo mv cen_patches_0.* /usr/local/etc/OpenFace/model/patch_experts/
       ```
 * Test OpenFace installation
   ```
