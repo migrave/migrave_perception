@@ -59,7 +59,7 @@ This package contains a ROS wrapper for face feature detector using [OpenFace](h
       sudo mkdir /usr/local/etc/OpenFace/model/patch_experts/
 
       # Move all models to patch_experts dir
-      sudo mv cen_patches_0.* /usr/local/etc/OpenFace/model/patch_experts/
+      sudo mv cen_patches_0.* cen_patches_1.* /usr/local/etc/OpenFace/model/patch_experts/
       ```
 * Test OpenFace installation
   ```
