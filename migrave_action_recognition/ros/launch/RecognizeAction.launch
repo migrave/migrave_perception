@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="migrave_action_recognition" type="recognize_action_demo" name="migrave_recognize_action_server" output="screen" />
+</launch>

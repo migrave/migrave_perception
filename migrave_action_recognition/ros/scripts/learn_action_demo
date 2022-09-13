@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import rospy
+import actionlib
+
+from mas_tools.ros_utils import get_package_path
+from action_recognition.action_learner import ActionLearner
+from action_recognition.action_model import ActionModel
+from migrave_action_recognition.msg import LearnActionAction, LearnActionResult
+
+class LearnActionServer(object):
+    '''A server exposing an action for learning bodily action.
+    '''
+
+    def __init__(self):
+        rospy.loginfo('Initialising Action Learning Server')
+
+        model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
+        action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
+
+        action_model = ActionModel(model_cfg_file, action_list_file)
+        self.action_learner = ActionLearner(action_model)
+
+        self.action_server = actionlib.SimpleActionServer('learn_action', LearnActionAction, self.learn, False)
+        self.action_server.start()
+        rospy.loginfo('learn_action server ready')
+
+    def learn(self, action):
+        rospy.loginfo('Received an action learn request')
+        rospy.loginfo('Learning {} actions: {}'.format(action.num_actions, action.action_names))
+        
+        self.action_learner.learn(action)
+
+        result = LearnActionResult()
+        result.success = True
+        self.action_server.set_succeeded(result)
+
+
+if __name__ == '__main__':
+    rospy.init_node('learn_action_server')
+
+    learn_action_server = LearnActionServer()
+
+    try:
+        while not rospy.is_shutdown():
+            rospy.spin()
+
+    except (KeyboardInterrupt, SystemExit):
+        print('Learning Server interrupted; exiting...')
+        

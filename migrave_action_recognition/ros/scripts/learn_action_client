@@ -1,0 +1,32 @@
+#! /usr/bin/env python3
+
+import rospy
+import actionlib
+
+from migrave_action_recognition.msg import LearnActionAction, LearnActionGoal, LearnActionResult
+
+def learn_action_client():
+
+    client = actionlib.SimpleActionClient('learn_action', LearnActionAction)
+ 
+    rospy.loginfo('Initialising Action Learning Client')
+    client.wait_for_server()
+
+    goal = LearnActionGoal(num_actions = 1, action_names=["Falling Down"])
+
+    client.send_goal(goal)
+    rospy.loginfo('Sent action learn request')
+
+    client.wait_for_result()
+
+    return client.get_result()
+
+
+if __name__ == '__main__':
+    try:
+        rospy.init_node('learn_action_client')
+        result = learn_action_client()
+        print("Result: {}".format(result))
+
+    except (KeyboardInterrupt, SystemExit):
+        print("program interrupted before completion", file=sys.stderr)

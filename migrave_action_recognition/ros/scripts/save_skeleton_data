@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+
+import numpy as np
+
+import rospy
+from mas_tools.ros_utils import get_package_path
+from qt_nuitrack_app.msg import Skeletons
+from migrave_skeleton_tools_ros.skeleton_utils import JointUtils
+
+skeleton_sequence = []
+record_data = False
+
+def process_nt_data(ske_data_msg):
+    rospy.loginfo('Recieved Skeleton Data...Processing Now')
+
+    if not record_data or not ske_data_msg.skeletons:
+        return
+
+    first_skeleton_msg = ske_data_msg.skeletons[0]
+
+    joint_positions = []
+    for joint in first_skeleton_msg.joints:
+        joint_name = JointUtils.JOINTS[joint.type]
+        if joint_name in JointUtils.JOINTS_TO_IGNORE:
+            continue
+
+            #joint_pose_stamped = PoseStamped()
+            #joint_pose_stamped.header.frame_id = self.camera_frame
+            #joint_pose_stamped.pose.position.x = joint.real[0] / 1000.
+            #joint_pose_stamped.pose.position.y = joint.real[1] / 1000.
+            #joint_pose_stamped.pose.position.z = joint.real[2] / 1000.
+
+        joint_positions.append(np.array(joint.real, dtype=np.float32) / 1000.)
+
+    skeleton_sequence.append(joint_positions)
+    print(len(skeleton_sequence))     
+
+if __name__ == '__main__':
+    rospy.init_node('action_pose_data_saver')
+
+    ske_sub = rospy.Subscriber("/qt_nuitrack_app/skeletons", Skeletons, process_nt_data)
+
+    try:
+        rospy.loginfo('Sleeping for 3 seconds; get into position!')
+        rospy.sleep(3.)
+        rospy.loginfo('Capturing data...')
+        record_data = True
+        while not rospy.is_shutdown() and len(skeleton_sequence) < 100:
+            rospy.spin()
+
+        record_data = False
+
+    except (KeyboardInterrupt, SystemExit):
+        print('action_pose_saver interrupted; exiting...')
+
+    data_path = get_package_path('migrave_action_recognition', 'data')
+    data_path = os.path.join(data_path, 'test_data.npy')
+    rospy.loginfo('Saving pose data to %s', data_path)
+    np.save(data_path, skeleton_sequence)
+

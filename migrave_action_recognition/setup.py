@@ -4,10 +4,11 @@ from distutils.core import setup
 from catkin_pkg.python_setup import generate_distutils_setup
 
 d = generate_distutils_setup(
-    packages=['migrave_action_recognition',
-              'migrave_action_recognition_wrapper'],
-    package_dir={'migrave_action_recognition': 'common/src/migrave_action_recognition',
-                 'migrave_action_recognition_wrapper': 'ros/src/migrave_action_recognition_wrapper'}
+    packages=["migrave_action_recognition", "action_recognition"],
+    package_dir={
+        "migrave_action_recognition": "ros/src/migrave_action_recognition",
+        "action_recognition": "common/src/action_recognition",
+    },
 )
 
 setup(**d)

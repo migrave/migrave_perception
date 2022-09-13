@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+import logging
+import os
+import numpy as np
+
+import rospy
+
+from mas_tools.ros_utils import get_package_path
+from CTRGCN.data.ntu.get_raw_skes_data import get_raw_bodies_data
+from qt_nuitrack_app.msg import Skeletons, SkeletonInfo, JointInfo
+
+if __name__ == "__main__":
+    rospy.init_node("action_recognizer_client")
+
+    ske_pub = rospy.Publisher("/qt_nuitrack_app/skeletons", Skeletons, queue_size=5)
+
+    ske_path = get_package_path("migrave_action_recognition", "data", "example_trn_data")
+    
+    for ske_file in os.listdir(ske_path):
+        print("Processing {}".format(ske_file))    
+
+        with open(os.path.join(ske_path, ske_file), 'r') as fr:
+            str_data = fr.readlines()
+
+        num_frames = int(str_data[0].strip('\r\n'))
+        rospy.sleep(3)
+        frames_drop = []
+        bodies_data = dict()
+        valid_frames = -1  # 0-based index
+        current_line = 1
+
+        for f in range(10):
+            skeletons = Skeletons()
+            num_bodies = int(str_data[current_line].strip('\r\n'))
+            current_line += 1
+
+            if num_bodies == 0:  # no data in this frame, drop it
+                frames_drop.append(f)  # 0-based index
+                continue
+
+            valid_frames += 1
+
+            for b in range(1):
+                body_info = SkeletonInfo()
+                body_info.id = b
+                current_line += 1
+                num_joints = int(str_data[current_line].strip('\r\n'))  # 25 joints
+                current_line += 1
+
+                for j in range(num_joints):
+                    joint_info = JointInfo()
+                    temp_str = str_data[current_line].strip('\r\n').split()
+                    joint_info.type = j
+                    joint_info.real = np.array(temp_str[:3], dtype=np.float32)
+                    #joint_info.projection = np.array(temp_str[5:7], dtype=np.float32)
+                    #joint_info.confidence = valid_frames
+                    body_info.joints.append(joint_info)
+                    current_line += 1
+
+                skeletons.skeletons.append(body_info)
+
+            rospy.loginfo(skeletons)
+            ske_pub.publish(skeletons)
+            rospy.sleep(3.)
+
+        try:
+            input("Press Enter to continue...")
+        
+        except (KeyboardInterrupt, SystemExit):
+            print("program interrupted before completion", file=sys.stderr)
+    #skeletons = Skeletons()
+    #ske_pub.publish(skeletons)
+
+    exit()
