@@ -8,11 +8,11 @@ from migrave_action_recognition.msg import LearnActionAction, LearnActionGoal, L
 def learn_action_client():
 
     client = actionlib.SimpleActionClient('learn_action', LearnActionAction)
- 
+
     rospy.loginfo('Initialising Action Learning Client')
     client.wait_for_server()
 
-    goal = LearnActionGoal(num_actions = 1, action_names=["Falling Down"], task_id = -1)
+    goal = LearnActionGoal(num_actions = 1, action_names=["Falling Down"], task_id = 2)
 
     client.send_goal(goal)
     rospy.loginfo('Sent action learn request')

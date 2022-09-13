@@ -4,6 +4,7 @@ import os
 import torch
 import pickle
 import yaml
+import rospy
 import numpy as np
 
 from FACIL.networks.network import LLL_Net
