@@ -1,44 +1,51 @@
-num_heads: 10
-heads: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-cperhead: 2
-model_name: "model10.ckpt"
-exemplars_name: "exemplars_model10.pkl"
-
-train_data_args:
-  random_choose: False
-  random_shift: False
-  random_move: False
-  window_size: 64
-  normalization: False
-  random_rot: True
-  p_interval: [0.5, 1]
-  vel: False
-  bone: False
-
-test_data_args:
-  window_size: 64
-  p_interval: [0.95]
-  vel: False
-  bone: False
-
-network_args:
-  num_class: 20
-  num_point: 19
-  num_person: 2
-  graph: CTRGCN.graph.ntu_rgb_d.Graph
-  graph_args:
-    num_node: 19
-    graph: 'nt'
-    labeling_mode: 'spatial'
-
+batch_size: 64
+exemplars_name: exemplars_model10.pkl
+heads:
+- 2
+- 2
+- 2
+- 2
+- 2
+- 2
+- 2
+- 2
+- 2
+- 2
 model_args:
-  nepochs: 65
-  wd: 0.0004
   lr: 0.1
   lr_factor: 0.1
   lr_patience: 35
   momentum: 0.9
-
-batch_size: 64
+  nepochs: 65
+  wd: 0.0004
+model_name: model10.ckpt
+nesterov: true
+network_args:
+  graph: CTRGCN.graph.ntu_rgb_d.Graph
+  graph_args:
+    graph: nt
+    labeling_mode: spatial
+    num_node: 19
+  num_class: 20
+  num_person: 2
+  num_point: 19
+num_heads: 10
 test_batch_size: 64
-nesterov: True
+test_data_args:
+  bone: false
+  p_interval:
+  - 0.95
+  vel: false
+  window_size: 64
+train_data_args:
+  bone: false
+  normalization: false
+  p_interval:
+  - 0.5
+  - 1
+  random_choose: false
+  random_move: false
+  random_rot: true
+  random_shift: false
+  vel: false
+  window_size: 64
