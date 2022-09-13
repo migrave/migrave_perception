@@ -102,14 +102,21 @@ class ActionModel:
 
         return self.actions[pred.data], pred.data
 
-    def train(self, num_actions, trn_data, val_data):
+    def train(self, action, trn_data, val_data):
         trn_loader = torch.utils.data.DataLoader(NTUDataset(trn_data, [], **self.model_cfg['train_data_args']),
                                                  batch_size=self.model_cfg['batch_size'], shuffle=True, num_workers=2, pin_memory=False)
         val_loader = torch.utils.data.DataLoader(NTUDataset(val_data, [], **self.model_cfg['test_data_args']),
                                                  batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=2, pin_memory=False)
         
-        self.net.add_head(num_actions)
-        self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, True)
+        if action.task_id == -1:
+            rospy.loginfo("Training Model...")
+            self.net.add_head(action.num_actions)
+            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, True)
+        else:
+            rospy.loginfo("Modifying Head#{} of Model...".format(action.task_id))
+            self.net.modify_head(action.task_id, self.model_cfg['heads'][action.task_id]+1)
+            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, False)
+          
 
     def save_model(self, action):
         self.new_model_cfg = load_yaml_file(get_package_path("migrave_action_recognition", "config", "action_model_config.yaml"))

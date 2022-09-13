@@ -42,7 +42,8 @@ class ActionLearner(object):
         print(x[20:25].shape)
         trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
         val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
-        self.model.train(action.num_actions, trn_data, val_data)
+        
+        self.model.train(action, trn_data, val_data)
 
         rospy.loginfo('Saving new model...')
         #self.model.save_model(action)
@@ -95,7 +96,6 @@ class ActionLearner(object):
             self.record = False
             ske_data = np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())])
             self.prepare_data(ske_data)
-            #self.action_data[self.seq_cnt] = ske_data
             if self.seq_cnt < 25:
                self.seq_cnt += 1
                self.record = True
