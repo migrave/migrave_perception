@@ -16,7 +16,7 @@ class ActionLearner(object):
         self.ske_seq = Queue(maxsize = 10)
         self.seq_cnt = 0
 
-        self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_ntu_data)
+        self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
         self.record = False
 
         self.model = action_model
@@ -25,24 +25,27 @@ class ActionLearner(object):
     def learn(self, action):
 
         self.action_data = np.zeros((25*action.num_actions, 80, 19*6), dtype=np.float32)
-        
+
         rospy.loginfo('Sleeping for 3 seconds; get into position!')
         rospy.sleep(3.)
         rospy.loginfo('Capturing data...')
-        
+
         self.record = True
-        while self.seq_cnt < 1:
+        while self.seq_cnt < 25:
             continue
-        
+
         self.record = False
-        
+
         rospy.loginfo('Training model...')
-        trn_data = {'x': self.action_data, 'y': [len(self.model.actions)]*20}
-        val_data = {'x': self.action_data[0], 'y': [len(self.model.actions)]}
-        #self.model.train(action.num_actions, trn_data, val_data)
-        
+        N, T, J = self.action_data.shape
+        x = self.action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
+        print(x[20:25].shape)
+        trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
+        val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
+        self.model.train(action.num_actions, trn_data, val_data)
+
         rospy.loginfo('Saving new model...')
-        self.model.save_model(action)
+        #self.model.save_model(action)
 
         return True
 
@@ -67,27 +70,26 @@ class ActionLearner(object):
         if self.ske_seq.full():
             rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
             self.record = False
-            ske_data = np.array([self.ske_seq.get() for i in range(80)])
-            ske_data = self.prepare_data(ske_data)
-            self.action_data[self.seq_cnt] = ske_data
+            ske_data = np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())])
+            self.prepare_data(ske_data)
             if self.seq_cnt < 25:
                self.seq_cnt += 1
                self.record = True
- 
+
     def process_ntu_data(self, ske_data_msg):
         if not self.record or not ske_data_msg.skeletons:
             return
-        
-#        rospy.loginfo('Recieved Skeleton Data...Processing Now')   
+
+#        rospy.loginfo('Recieved Skeleton Data...Processing Now')
         first_skeleton_msg = ske_data_msg.skeletons[0]
 
         joint_positions = np.zeros((len(ntu_joint_map), 3), dtype=np.float32)
-        for joint in first_skeleton_msg.joints:  
+        for joint in first_skeleton_msg.joints:
             if joint.type in ntu_joint_map:
                 joint_positions[ntu_joint_map.index(joint.type), :] = np.array(joint.real, dtype=np.float32) 
-                
+
         self.ske_seq.put(joint_positions)
-        
+
         if self.ske_seq.full():
             rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
             self.record = False
@@ -97,7 +99,6 @@ class ActionLearner(object):
             if self.seq_cnt < 25:
                self.seq_cnt += 1
                self.record = True
-                      
 
     def prepare_data(self, ske_data):
         num_frames = ske_data.shape[0]
@@ -110,7 +111,6 @@ class ActionLearner(object):
         for f in range(num_frames):
             ske_joints[f] -= np.tile(origin, 19)
 
-#        processed_ske_data = np.zeros((1, num_frames, 19*6), dtype=np.float32)
         self.action_data[self.seq_cnt, :num_frames] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
 
         return
