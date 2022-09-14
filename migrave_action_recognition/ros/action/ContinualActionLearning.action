@@ -1,0 +1,12 @@
+# goal
+string request_type
+uint32 num_actions
+string[] action_names
+int32 task_id #add to existing task
+---
+# result
+bool success
+---
+# feedback
+string current_state
+string action_name

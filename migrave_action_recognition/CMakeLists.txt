@@ -18,6 +18,7 @@ add_action_files(
   DIRECTORY ros/action
   FILES
   LearnAction.action
+  ContinualActionLearning.action
 )
 
 generate_messages(
@@ -45,5 +46,6 @@ install(PROGRAMS
   ros/scripts/save_skeleton_data
   ros/scripts/learn_action_demo
   ros/scripts/learn_action_client
+  ros/scripts/continual_action_server
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/scripts
 )
