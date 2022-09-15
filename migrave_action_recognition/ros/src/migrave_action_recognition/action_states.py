@@ -9,7 +9,7 @@ from action_recognition.action_learner import ActionLearner
 from action_recognition.action_classifier import ActionClassifier
 from action_recognition.action_model import ActionModel
 
-from migrave_action_recognition.msg import ContinualActionLearningResult
+from migrave_action_recognition.msg import ContinualActionLearningResult, ContinualActionLearningFeedback
 
 class ContinualActionLearningSM(FTSM):
     def __init__(self, max_recovery_attempts=1):
@@ -17,7 +17,8 @@ class ContinualActionLearningSM(FTSM):
         
         self.execution_requested = False
         self.goal = None
-        self.result = None
+        
+        self.action_fb_pub = rospy.Publisher("/continual_action_learning/feedback", ContinualActionLearningFeedback, queue_size=1)
             
     def init(self):
         rospy.loginfo('Initialising Continual Action Learning Server')
@@ -36,29 +37,68 @@ class ContinualActionLearningSM(FTSM):
         return FTSMTransitions.DONE_CONFIGURING
         
     def ready(self):
-        
         if self.execution_requested:
             self.execution_requested = False
             self.result = None
             return FTSMTransitions.RUN
         else:
-            if self.result:
-                self.result = None
             return FTSMTransitions.WAIT
         
     def running(self):
-        rospy.loginfo('Running Continual Action Learning Server')
+        if self.goal:
         
-        rospy.sleep(2)
+            if self.goal.request_type == "classify":
+                rospy.loginfo('Classifying')
+                action = self.action_classifier.classify_action()
+                
+                if action is not None:
+                    rospy.loginfo('Recognized action: %s, index %d', action[0], action[1])
+                    self.publish_feedback(action[0])
+                else:
+                    self.publish_feedback("Action Not Recognized")
+                    
+                return FTSMTransitions.CONTINUE
+                
+            elif self.goal.request_type == "learn":
+                rospy.loginfo('Learning')
+                
+                self.action_classifier.record = False
+                self.action_learner.learn(self.goal)
+                rospy.sleep(2)
+                
+                self.action_classifier.record = True
+                self.result = self.set_result(True)
+                return FTSMTransitions.DONE
+                
+            elif self.goal.request_type == "stop":
+                rospy.loginfo('Stopping')
+                
+                rospy.sleep(2)
+                
+                self.result = self.set_result(False)
+                return FTSMTransitions.DONE
+                
+            else:
+                self.result = self.set_result(False)
+                return FTSMTransitions.RECOVER
         
-        return FTSMTransitions.DONE
+        else:
+            return FTSMTransitions.DONE
         
     def recovering(self):
         rospy.loginfo('Continual Action Learning Server is Recovering')
-    
+        
+        self.goal = None
         return FTSMTransitions.DONE_RECOVERING
         
     def set_result(self, success):
         result = ContinualActionLearningResult()
         result.success = success
+        
         return result
+    
+    def publish_feedback(self, action):
+        feedback = ContinualActionLearningFeedback()
+        feedback.action_name = action
+        
+        self.action_fb_pub.publish(feedback)
