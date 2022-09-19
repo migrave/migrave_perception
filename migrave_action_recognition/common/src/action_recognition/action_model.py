@@ -25,7 +25,7 @@ class ActionModel:
     def __init__(self, model_cfg, action_list):
         self.model_cfg = load_yaml_file(model_cfg)
         self.model_path = get_package_path("migrave_action_recognition", "models")
-        
+
         with open(action_list, 'r') as f:
             self.actions = f.read().splitlines()
 
@@ -78,7 +78,7 @@ class ActionModel:
     def load_model(self, bias_layers, exemplars):
         self.model_cfg['model_args']['exemplars_dataset'] = exemplars['exm_ds']
         model = Appr(self.net, self.device, **self.model_cfg['model_args'])
-        
+
         model.model_old = deepcopy(self.net)
         model.bias_layers = bias_layers
         model.x_valid_exemplars = exemplars['val_exm_x']
@@ -109,7 +109,7 @@ class ActionModel:
                                                  batch_size=self.model_cfg['batch_size'], shuffle=True, num_workers=2, pin_memory=False)
         val_loader = torch.utils.data.DataLoader(NTUDataset(val_data, [], **self.model_cfg['test_data_args']),
                                                  batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=2, pin_memory=False)
-        
+
         if action.task_id == -1:
             rospy.loginfo("Training Model...")
             self.net.add_head(action.num_actions)
@@ -118,38 +118,35 @@ class ActionModel:
             rospy.loginfo("Modifying Head#{} of Model...".format(action.task_id))
             self.net.modify_head(action.task_id, self.model_cfg['heads'][action.task_id]+1)
             self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, False)
-          
 
     def save_model(self, action):
         self.new_model_cfg = load_yaml_file(get_package_path("migrave_action_recognition", "config", "action_model_config.yaml"))
         if action.task_id == -1:
-            self.new_model_cfg['heads'].append(action.num_actions)    
+            self.new_model_cfg['heads'].append(action.num_actions)
             self.new_model_cfg['num_heads'] += 1
             self.new_model_cfg['model_name'] = "model{}.ckpt".format(self.new_model_cfg['num_heads'])
             self.new_model_cfg['exemplars_name'] = "exemplars_model{}.pkl".format(self.new_model_cfg['num_heads'])
             self.actions.extend(action.action_names)
         else:
             self.new_model_cfg['heads'][action.task_id] += action.num_actions   
-            self.new_model_cfg['model_name'] = "model-update_{}.ckpt".format(self.new_model_cfg['heads'][action.task_id])
-            self.new_model_cfg['exemplars_name'] = "exemplars_model-update_{}.pkl".format(self.new_model_cfg['heads'][action.task_id])
-            self.actions[self.model_cfg['heads'][action.task_id+1:action.task_id+1]] = action.action_names
-        
+            self.new_model_cfg['model_name'] = "model-update_{}.ckpt".format(action.task_id)
+            self.new_model_cfg['exemplars_name'] = "exemplars_model-update_{}.pkl".format(action.task_id)
+            list_idx = sum(self.model_cfg['heads'][:action.task_id+1])
+            self.actions[list_idx:list_idx] = action.action_names
+
         np.savetxt(get_package_path("migrave_action_recognition", "config", "action_list2.txt"), self.actions, fmt="%s")
-        
+
         with open(get_package_path("migrave_action_recognition", "config", "action_model_config2.yaml"), 'w') as cfg_file:
             yaml.dump(self.new_model_cfg, cfg_file, default_flow_style=False)
-        
+
         bias_layers = []
         for layer in self.model.bias_layers:
             bias_layers.append(layer.state_dict())
-        
+
         exm = {'exm_ds': self.model.exemplars_dataset, 'val_exm_x': self.model.x_valid_exemplars, 'val_exm_y': self.model.y_valid_exemplars}
-        
+
         torch.save({'model': self.net.state_dict(), 'bias_layers': bias_layers},
                    os.path.join(self.model_path, self.new_model_cfg['model_name']))
-                   
+
         with open(os.path.join(self.model_path, self.new_model_cfg['exemplars_name']), 'wb') as outp:
             pickle.dump(exm, outp, pickle.HIGHEST_PROTOCOL)
-        
-        
-        

@@ -31,10 +31,10 @@ class ActionLearner(object):
         while self.seq_cnt < 25:
             rospy.loginfo('Capturing data...')
             self.record = True
-            
+
             while not self.ske_seq.full():
                 continue
-            
+
             rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
             self.record = False
             skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
@@ -48,11 +48,11 @@ class ActionLearner(object):
         x = self.prepare_data(skes_data)
         trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
         val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
-        
-        self.model.train(action, trn_data, val_data)
+
+        #self.model.train(action, trn_data, val_data)
 
         rospy.loginfo('Saving new model...')
-        #self.model.save_model(action)
+        self.model.save_model(action)
 
         return True
 
@@ -97,8 +97,8 @@ class ActionLearner(object):
                self.record = True
 
     def prepare_data(self, skes_data):
-        action_data = np.zeros((len(skes_data, 80, 19*6), dtype=np.float32)
-        
+        action_data = np.zeros((len(skes_data), 80, 19*6), dtype=np.float32)
+
         for idx, ske_data in enumerate(skes_data):
             num_frames = ske_data.shape[0]
             ske_joints = np.zeros((num_frames, 19*3), dtype=np.float32)
@@ -111,12 +111,8 @@ class ActionLearner(object):
                 ske_joints[f] -= np.tile(origin, 19)
 
             action_data[idx, :num_frames] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
-            
-        print(action_data.shape)
-        
+
         N, T, J = self.action_data.shape
         x = self.action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
-        
-        print(x.shape)
 
         return x
