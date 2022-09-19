@@ -6,6 +6,7 @@ import pickle
 import yaml
 import rospy
 import numpy as np
+from copy import deepcopy
 
 from FACIL.networks.network import LLL_Net
 from FACIL.datasets.exemplars_dataset_ntu import ExemplarsDataset
@@ -78,7 +79,7 @@ class ActionModel:
         self.model_cfg['model_args']['exemplars_dataset'] = exemplars['exm_ds']
         model = Appr(self.net, self.device, **self.model_cfg['model_args'])
         
-        model.model_old = self.net
+        model.model_old = deepcopy(self.net)
         model.bias_layers = bias_layers
         model.x_valid_exemplars = exemplars['val_exm_x']
         model.y_valid_exemplars = exemplars['val_exm_y']
@@ -112,7 +113,7 @@ class ActionModel:
         if action.task_id == -1:
             rospy.loginfo("Training Model...")
             self.net.add_head(action.num_actions)
-            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, True)
+            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, False)
         else:
             rospy.loginfo("Modifying Head#{} of Model...".format(action.task_id))
             self.net.modify_head(action.task_id, self.model_cfg['heads'][action.task_id]+1)
@@ -121,11 +122,17 @@ class ActionModel:
 
     def save_model(self, action):
         self.new_model_cfg = load_yaml_file(get_package_path("migrave_action_recognition", "config", "action_model_config.yaml"))
-        self.new_model_cfg['heads'].append(action.num_actions)    
-        self.new_model_cfg['num_heads'] += 1
-        self.new_model_cfg['model_name'] = "model{}.ckpt".format(self.new_model_cfg['num_heads'])
-        self.new_model_cfg['exemplars_name'] = "exemplars_model{}.pkl".format(self.new_model_cfg['num_heads'])
-        self.actions.extend(action.action_names)
+        if action.task_id == -1:
+            self.new_model_cfg['heads'].append(action.num_actions)    
+            self.new_model_cfg['num_heads'] += 1
+            self.new_model_cfg['model_name'] = "model{}.ckpt".format(self.new_model_cfg['num_heads'])
+            self.new_model_cfg['exemplars_name'] = "exemplars_model{}.pkl".format(self.new_model_cfg['num_heads'])
+            self.actions.extend(action.action_names)
+        else:
+            self.new_model_cfg['heads'][action.task_id] += action.num_actions   
+            self.new_model_cfg['model_name'] = "model-update_{}.ckpt".format(self.new_model_cfg['heads'][action.task_id])
+            self.new_model_cfg['exemplars_name'] = "exemplars_model-update_{}.pkl".format(self.new_model_cfg['heads'][action.task_id])
+            self.actions[self.model_cfg['heads'][action.task_id+1:action.task_id+1]] = action.action_names
         
         np.savetxt(get_package_path("migrave_action_recognition", "config", "action_list2.txt"), self.actions, fmt="%s")
         

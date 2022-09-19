@@ -23,23 +23,29 @@ class ActionLearner(object):
 
 
     def learn(self, action):
-
-        self.action_data = np.zeros((25*action.num_actions, 80, 19*6), dtype=np.float32)
+        skes_data = []
 
         rospy.loginfo('Sleeping for 3 seconds; get into position!')
         rospy.sleep(3.)
-        rospy.loginfo('Capturing data...')
 
-        self.record = True
         while self.seq_cnt < 25:
-            continue
+            rospy.loginfo('Capturing data...')
+            self.record = True
+            
+            while not self.ske_seq.full():
+                continue
+            
+            rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
+            self.record = False
+            skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
+            self.seq_cnt += 1
+            input("Press Enter to continue....")
+            rospy.sleep(1.)
 
         self.record = False
 
         rospy.loginfo('Training model...')
-        N, T, J = self.action_data.shape
-        x = self.action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
-        print(x[20:25].shape)
+        x = self.prepare_data(skes_data)
         trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
         val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
         
@@ -49,7 +55,6 @@ class ActionLearner(object):
         #self.model.save_model(action)
 
         return True
-
 
     def process_nt_data(self, ske_data_msg):
         if not self.record or not ske_data_msg.skeletons:
@@ -67,15 +72,6 @@ class ActionLearner(object):
             joint_positions.append(np.array(joint.real, dtype=np.float32) / 1000.)
 
         self.ske_seq.put(joint_positions)
-
-        if self.ske_seq.full():
-            rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
-            self.record = False
-            ske_data = np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())])
-            self.prepare_data(ske_data)
-            if self.seq_cnt < 25:
-               self.seq_cnt += 1
-               self.record = True
 
     def process_ntu_data(self, ske_data_msg):
         if not self.record or not ske_data_msg.skeletons:
@@ -100,17 +96,27 @@ class ActionLearner(object):
                self.seq_cnt += 1
                self.record = True
 
-    def prepare_data(self, ske_data):
-        num_frames = ske_data.shape[0]
-        ske_joints = np.zeros((num_frames, 19*3), dtype=np.float32)
+    def prepare_data(self, skes_data):
+        action_data = np.zeros((len(skes_data, 80, 19*6), dtype=np.float32)
+        
+        for idx, ske_data in enumerate(skes_data):
+            num_frames = ske_data.shape[0]
+            ske_joints = np.zeros((num_frames, 19*3), dtype=np.float32)
 
-        ske_joints = ske_data.reshape(-1, 19*3)
+            ske_joints = ske_data.reshape(-1, 19*3)
 
-        origin = np.copy(ske_joints[0, 3:6])
+            origin = np.copy(ske_joints[0, 3:6])
 
-        for f in range(num_frames):
-            ske_joints[f] -= np.tile(origin, 19)
+            for f in range(num_frames):
+                ske_joints[f] -= np.tile(origin, 19)
 
-        self.action_data[self.seq_cnt, :num_frames] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
+            action_data[idx, :num_frames] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
+            
+        print(action_data.shape)
+        
+        N, T, J = self.action_data.shape
+        x = self.action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
+        
+        print(x.shape)
 
-        return
+        return x
