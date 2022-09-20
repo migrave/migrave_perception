@@ -8,7 +8,7 @@ from action_recognition.action_learner import ActionLearner
 from action_recognition.action_classifier import ActionClassifier
 from action_recognition.action_model import ActionModel
 
-from migrave_action_recognition.msg import ContinualActionLearningResult, ContinualActionLearningFeedback
+from migrave_action_recognition.msg import ContinualActionLearningGoal, ContinualActionLearningResult, ContinualActionLearningFeedback
 
 class ContinualActionLearningSM(FTSM):
     def __init__(self, max_recovery_attempts=1):
@@ -45,7 +45,7 @@ class ContinualActionLearningSM(FTSM):
 
     def running(self):
         if self.goal:
-            if self.goal.request_type == "classify":
+            if self.goal.request_type == ContinualActionLearningGoal.CLASSIFY:
                 rospy.loginfo('Classifying')
                 action = self.action_classifier.classify_action()
 
@@ -56,7 +56,7 @@ class ContinualActionLearningSM(FTSM):
                     self.publish_feedback("Action Not Recognized")
 
                 return FTSMTransitions.CONTINUE
-            elif self.goal.request_type == "learn":
+            elif self.goal.request_type == ContinualActionLearningGoal.LEARN:
                 rospy.loginfo('Learning')
                 self.action_classifier.record = False
                 self.action_learner.learn(self.goal)
@@ -65,7 +65,7 @@ class ContinualActionLearningSM(FTSM):
                 self.action_classifier.reset()
                 self.result = self.set_result(True)
                 return FTSMTransitions.DONE
-            elif self.goal.request_type == "stop":
+            elif self.goal.request_type == ContinualActionLearningGoal.STOP:
                 rospy.loginfo('Stopping')
                 rospy.sleep(2)
                 self.result = self.set_result(False)
