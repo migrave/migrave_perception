@@ -46,7 +46,6 @@ class ContinualActionLearningSM(FTSM):
     def running(self):
         if self.goal:
             if self.goal.request_type == ContinualActionLearningGoal.CLASSIFY:
-                rospy.loginfo('Classifying')
                 action = self.action_classifier.classify_action()
 
                 if action is not None:
