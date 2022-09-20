@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from queue import Queue
 from collections import deque
 import numpy as np
 
@@ -22,15 +21,16 @@ class ActionClassifier(object):
         self.model = action_model
         self.ske_data = np.array([])
 
-        self.classify = False
         self.record = True
-        #self.ske_seq = Queue(maxsize = 80)
+
         self.ske_seq = deque(maxlen = 80)
-        self.seq_cnt = 0
+#        self.seq_cnt = 0
 
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
 
     def classify_action(self):
+        self.ske_data = np.array(list(self.ske_seq))
+
         if self.ske_data.shape[0] == 80:
             rospy.loginfo('Recognizing action')
             self.ske_data = self.prepare_data(self.ske_data)
@@ -57,14 +57,13 @@ class ActionClassifier(object):
             joint_positions.append(np.array(joint.real, dtype=np.float32) / 1000.)
 
         self.ske_seq.append(joint_positions)
-        self.seq_cnt += 1
-        
-        if self.seq_cnt == 80:
-            rospy.loginfo("80 frames captured")
-            #self.ske_data = np.array([self.ske_seq.get() for i in range(80)])
-            self.ske_data = np.array(list(self.ske_seq))
-            print(self.ske_data.shape)
-            self.seq_cnt = 0
+#        self.seq_cnt += 1
+
+#        if self.seq_cnt == 80:
+#            rospy.loginfo("80 frames captured")
+#        self.ske_data = np.array(list(self.ske_seq))
+#            print(self.ske_data.shape)
+#            self.seq_cnt = 0
 
     def process_ntu_data(self, ske_data_msg):
         rospy.loginfo('Recieved Skeleton Data...Processing Now')
@@ -137,3 +136,6 @@ class ActionClassifier(object):
 
         return processed_ske_data
 
+    def reset(self):
+        self.ske_seq.clear()
+        self.record = True

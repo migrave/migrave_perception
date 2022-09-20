@@ -83,6 +83,7 @@ class ActionModel:
         model.bias_layers = bias_layers
         model.x_valid_exemplars = exemplars['val_exm_x']
         model.y_valid_exemplars = exemplars['val_exm_y']
+        model.num_exemplars_per_class = 20
 
         return model
 
@@ -91,13 +92,13 @@ class ActionModel:
         J = int(J/6)
         x = ske_seq.reshape((N, T, 2, J, 3)).transpose(0, 4, 1, 3, 2)
 
-        valid_frame_num = np.sum(x.sum(0).sum(-1).sum(-1) != 0)
-        # reshape Tx(MVC) to CTVM
-        x = tools.valid_crop_resize(x[0], valid_frame_num, [0.95], 64)
+        tst_loader = torch.utils.data.DataLoader(NTUDataset({'x':x, 'y': [0]}, [], **self.model_cfg['test_data_args']),
+                                                 batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=4, pin_memory=False)
 
         with torch.no_grad():
             self.net.eval()
-            out = self.net(torch.from_numpy(x[np.newaxis]))
+            x, y = next(iter(tst_loader))
+            out = self.net(x)
             out = self.model.bias_forward(out)
 
             pred = torch.cat(out, dim=1).argmax(1)
@@ -106,14 +107,14 @@ class ActionModel:
 
     def train(self, action, trn_data, val_data):
         trn_loader = torch.utils.data.DataLoader(NTUDataset(trn_data, [], **self.model_cfg['train_data_args']),
-                                                 batch_size=self.model_cfg['batch_size'], shuffle=True, num_workers=2, pin_memory=False)
+                                                 batch_size=self.model_cfg['batch_size'], shuffle=True, num_workers=4, pin_memory=False)
         val_loader = torch.utils.data.DataLoader(NTUDataset(val_data, [], **self.model_cfg['test_data_args']),
-                                                 batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=2, pin_memory=False)
+                                                 batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=4, pin_memory=False)
 
         if action.task_id == -1:
             rospy.loginfo("Training Model...")
             self.net.add_head(action.num_actions)
-            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, False)
+            self.model.train(self.model_cfg['num_heads'], trn_loader, val_loader, True)
         else:
             rospy.loginfo("Modifying Head#{} of Model...".format(action.task_id))
             self.net.modify_head(action.task_id, self.model_cfg['heads'][action.task_id]+1)

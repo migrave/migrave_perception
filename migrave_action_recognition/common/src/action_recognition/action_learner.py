@@ -12,7 +12,6 @@ ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 1
 class ActionLearner(object):
     def __init__(self, action_model, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons"):
 
-        self.action_data = np.zeros((25, 80, 19*6), dtype=np.float32)
         self.ske_seq = Queue(maxsize = 10)
         self.seq_cnt = 0
 
@@ -42,18 +41,15 @@ class ActionLearner(object):
             input("Press Enter to continue....")
             rospy.sleep(1.)
 
-        self.record = False
+        rospy.loginfo('Preparing Data...')
+        trn_data, val_data = self.prepare_data(skes_data)
 
-        rospy.loginfo('Training model...')
-        x = self.prepare_data(skes_data)
-        trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
-        val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
-
-        #self.model.train(action, trn_data, val_data)
+        self.model.train(action, trn_data, val_data)
 
         rospy.loginfo('Saving new model...')
-        self.model.save_model(action)
+        #self.model.save_model(action)
 
+        rospy.loginfo('Learning Complete!...')
         return True
 
     def process_nt_data(self, ske_data_msg):
@@ -112,7 +108,23 @@ class ActionLearner(object):
 
             action_data[idx, :num_frames] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
 
-        N, T, J = self.action_data.shape
-        x = self.action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
+        N, T, J = action_data.shape
+        x = action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
 
-        return x
+        trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
+        val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
+
+#        for idx, ske in enumerate(x):
+#            if idx < 20:
+#                trn_data['x'].append(ske)
+#                trn_data['y'].append(len(self.model.actions))
+#            else:
+#                val_data['x'].append(ske)
+#                val_data['y'].append(len(self.model.actions))
+
+#        print(len(trn_data['x']), len(trn_data['y']))
+#        print(len(val_data['x']), len(val_data['y']))
+        print(trn_data['x'].shape)
+        print(val_data['x'].shape)
+
+        return trn_data, val_data
