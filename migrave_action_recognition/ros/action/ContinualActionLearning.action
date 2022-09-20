@@ -1,5 +1,9 @@
 # goal
-string request_type
+string CLASSIFY=classify
+string LEARN=learn
+string STOP=stop
+
+string request_type #classify, learn or stop
 uint32 num_actions
 string[] action_names
 int32 task_id #add to existing task
