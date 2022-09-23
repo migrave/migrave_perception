@@ -48,11 +48,12 @@ class ActionLearner(object):
 
         rospy.loginfo('Preparing Data...')
         trn_data, val_data = self.prepare_data(skes_data)
+        np.savez('%s.npz' % action.action_names[0], x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
 
         self.model.train(action, trn_data, val_data)
 
         rospy.loginfo('Saving new model...')
-        #self.model.save_model(action)
+        self.model.save_model(action)
 
         rospy.loginfo('Learning Complete!...')
         return True
@@ -118,13 +119,5 @@ class ActionLearner(object):
 
         trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
         val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
-
-#        for idx, ske in enumerate(x):
-#            if idx < 20:
-#                trn_data['x'].append(ske)
-#                trn_data['y'].append(len(self.model.actions))
-#            else:
-#                val_data['x'].append(ske)
-#                val_data['y'].append(len(self.model.actions))
 
         return trn_data, val_data
