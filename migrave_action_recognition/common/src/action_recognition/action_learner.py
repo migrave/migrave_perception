@@ -5,6 +5,7 @@ import numpy as np
 from queue import Queue
 
 from qt_nuitrack_app.msg import Skeletons
+from std_msgs.msg import String
 from migrave_skeleton_tools_ros.skeleton_utils import JointUtils
 
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
@@ -12,29 +13,33 @@ ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 1
 class ActionLearner(object):
     def __init__(self, action_model, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons"):
 
-        self.ske_seq = Queue(maxsize = 10)
+        self.model = action_model
+
+        self.ske_seq = Queue(maxsize = 80)
         self.seq_cnt = 0
 
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
         self.record = False
 
-        self.model = action_model
-
+        self.qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
 
     def learn(self, action):
         skes_data = []
 
         rospy.loginfo('Sleeping for 3 seconds; get into position!')
+        self.qt_speech.publish('Get into position!')
         rospy.sleep(3.)
 
         while self.seq_cnt < 25:
             rospy.loginfo('Capturing data...')
+            #self.qt_speech.publish('Capturing action sequence!')
             self.record = True
 
             while not self.ske_seq.full():
                 continue
 
-            rospy.loginfo("Sequence: {} captured".format(self.seq_cnt))
+            rospy.loginfo('Sequence: {} captured'.format(self.seq_cnt))
+            #self.qt_speech.publish('Sequence: {} captured'.format(self.seq_cnt))
             self.record = False
             skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
             self.seq_cnt += 1
@@ -121,10 +126,5 @@ class ActionLearner(object):
 #            else:
 #                val_data['x'].append(ske)
 #                val_data['y'].append(len(self.model.actions))
-
-#        print(len(trn_data['x']), len(trn_data['y']))
-#        print(len(val_data['x']), len(val_data['y']))
-        print(trn_data['x'].shape)
-        print(val_data['x'].shape)
 
         return trn_data, val_data
