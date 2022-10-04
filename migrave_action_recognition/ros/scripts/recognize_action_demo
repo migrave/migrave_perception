@@ -7,6 +7,7 @@ import rospy
 from mas_tools.ros_utils import get_package_path
 from action_recognition.action_classifier import ActionClassifier
 from action_recognition.action_model import ActionModel
+from std_msgs.msg import String
 
 if __name__ == "__main__":
     rospy.init_node("action_recognizer_demo")
@@ -16,16 +17,22 @@ if __name__ == "__main__":
 
     action_model = ActionModel(model_cfg_file, action_list_file)
     action_classifier = ActionClassifier(action_model)
+    
+    qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
 
     try:
         rospy.loginfo('Sleeping for 3 seconds; get into position!')
+        qt_speech.publish('Get into position!')
         rospy.sleep(3.)
         rospy.loginfo('Capturing data...')
+        qt_speech.publish('Capturing action sequence!')
+        
         action_classifier.record = True
         while not rospy.is_shutdown():
             action = action_classifier.classify_action()
             if action is not None:
                 rospy.loginfo('Recognized action: %s, index %d', action[0], action[1])
             rospy.sleep(3.)
+            
     except (KeyboardInterrupt, SystemExit):
         print('action_recognizer_demo interrupted; exiting...')
