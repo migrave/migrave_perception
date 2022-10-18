@@ -32,26 +32,26 @@ class ActionLearner(object):
         self.qt_speech.publish('Get into position!')
         rospy.sleep(3.)
 
-        while self.seq_cnt < 25:
+        while self.seq_cnt < 25*action.num_actions:
             rospy.loginfo('Capturing data...')
-            self.qt_speech.publish('Capturing action sequence!')
+            #self.qt_speech.publish('Capturing action sequence!')
             self.record = True
 
             while not self.ske_seq.full():
                 continue
 
             rospy.loginfo('Sequence: {} captured'.format(self.seq_cnt+1))
-            self.qt_speech.publish('Sequence: {} captured'.format(self.seq_cnt+1))
+            #self.qt_speech.publish('Sequence: {} captured'.format(self.seq_cnt+1))
             self.record = False
             skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
             self.seq_cnt += 1
-            self.qt_speech.publish('Get into Position!')
+            #self.qt_speech.publish('Get into Position!')
             rospy.sleep(2.)
 
         rospy.loginfo('Preparing Data...')
-        trn_data, val_data = self.prepare_data(skes_data)
-        np.savez(self.data_path + '%s.npz' % action.action_names[0], x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
-
+        trn_data, val_data = self.prepare_data(skes_data, action.num_actions)
+        np.savez(self.save_path + '/test.npz', x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
+        return True
         self.model.train(action, trn_data, val_data)
 
         rospy.loginfo('Saving new model...')
@@ -98,7 +98,7 @@ class ActionLearner(object):
                self.seq_cnt += 1
                self.record = True
 
-    def prepare_data(self, skes_data):
+    def prepare_data(self, skes_data, num_actions):
         action_data = np.zeros((len(skes_data), self.seq_size, 19*6), dtype=np.float32)
 
         for idx, ske_data in enumerate(skes_data):
@@ -117,7 +117,19 @@ class ActionLearner(object):
         N, T, J = action_data.shape
         x = action_data.reshape((N, T, 2, int(J/6), 3)).transpose(0, 4, 1, 3, 2)
 
-        trn_data = {'x': x[:20], 'y': [len(self.model.actions)]*20}
-        val_data = {'x': x[20:25], 'y': [len(self.model.actions)]*5}
+        x_train = x[:20]
+        x_val = x[20:25]
+        y_train = [len(self.model.actions)]*20
+        y_val = [len(self.model.actions)]*5
+
+        if num_actions > 1:
+            for i in range(1, num_actions):
+                x_train = np.hstack((x_train, x[25*i:25*i+20]))
+                x_val = np.hstack((x_val, x[25*i+20:25*(i+1)]))
+                y_train.append([len(self.model.actions)+i]*20)
+                y_val.append([len(self.model.actions)+i]*5)
+
+        trn_data = {'x': x_train, 'y': y_train}
+        val_data = {'x': x_val, 'y': y_val}
 
         return trn_data, val_data
