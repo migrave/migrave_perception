@@ -4,7 +4,9 @@ from collections import deque
 import numpy as np
 
 import rospy
+import rosbag
 
+from std_msgs.msg import String
 from qt_nuitrack_app.msg import Skeletons
 from migrave_skeleton_tools_ros.skeleton_utils import JointUtils
 
@@ -14,24 +16,25 @@ from CTRGCN.data.ntu.seq_transformation import seq_translation, align_frames
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
 
 class ActionClassifier(object):
-    def __init__(self, action_model, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", camera_frame="Camera_link"):
-
-        self.cam_frame = camera_frame
+    def __init__(self, action_model, rosbag_file, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", seq_size=50):
 
         self.model = action_model
         self.ske_data = np.array([])
+        self.seq_size = seq_size
 
         self.record = True
 
-        self.ske_seq = deque(maxlen = 80)
-#        self.seq_cnt = 0
+        self.ske_seq = deque(maxlen = seq_size)
+        self.qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
 
+        self.bag = rosbag.Bag(rosbag_file, 'w')
+        self.topic = nuitrack_skeleton_topic
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
 
     def classify_action(self):
         self.ske_data = np.array(list(self.ske_seq))
 
-        if self.ske_data.shape[0] == 80:
+        if self.ske_data.shape[0] == self.seq_size:
             rospy.loginfo('Recognizing action')
             self.ske_data = self.prepare_data(self.ske_data)
             action_type = self.model.classify(self.ske_data)
@@ -45,7 +48,7 @@ class ActionClassifier(object):
         if not self.record or not ske_data_msg.skeletons:
             return
 
-#        rospy.loginfo('Recieved Skeleton Data...Processing Now')
+        self.bag.write(self.topic, ske_data_msg)
         first_skeleton_msg = ske_data_msg.skeletons[0]
 
         joint_positions = []
@@ -57,13 +60,6 @@ class ActionClassifier(object):
             joint_positions.append(np.array(joint.real, dtype=np.float32) / 1000.)
 
         self.ske_seq.append(joint_positions)
-#        self.seq_cnt += 1
-
-#        if self.seq_cnt == 80:
-#            rospy.loginfo("80 frames captured")
-#        self.ske_data = np.array(list(self.ske_seq))
-#            print(self.ske_data.shape)
-#            self.seq_cnt = 0
 
     def process_ntu_data(self, ske_data_msg):
         rospy.loginfo('Recieved Skeleton Data...Processing Now')
@@ -122,17 +118,17 @@ class ActionClassifier(object):
         self.ske_data['data'] = bodies_data
 
     def prepare_data(self, ske_data):
-        ske_joints = np.zeros((80, 19*3), dtype=np.float32)
+        ske_joints = np.zeros((self.seq_size, 19*3), dtype=np.float32)
 
         ske_joints = ske_data.reshape(-1, 19*3)
 
         origin = np.copy(ske_joints[0, 6:9])
 
-        for f in range(80):
+        for f in range(self.seq_size):
             ske_joints[f] -= np.tile(origin, 19)
 
-        processed_ske_data = np.zeros((1, 80, 19*6), dtype=np.float32)
-        processed_ske_data[0, :80] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
+        processed_ske_data = np.zeros((1, self.seq_size, 19*6), dtype=np.float32)
+        processed_ske_data[0, :self.seq_size] = np.hstack((ske_joints, np.zeros_like(ske_joints)))
 
         return processed_ske_data
 

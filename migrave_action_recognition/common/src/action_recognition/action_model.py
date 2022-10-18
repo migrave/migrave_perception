@@ -93,7 +93,7 @@ class ActionModel:
         x = ske_seq.reshape((N, T, 2, J, 3)).transpose(0, 4, 1, 3, 2)
 
         tst_loader = torch.utils.data.DataLoader(NTUDataset({'x':x, 'y': [0]}, [], **self.model_cfg['test_data_args']),
-                                                 batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=4, pin_memory=False)
+                                                 batch_size=self.model_cfg['test_batch_size'], shuffle=True, num_workers=2, pin_memory=False)
 
         with torch.no_grad():
             self.net.eval()

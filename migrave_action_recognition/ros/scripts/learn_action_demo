@@ -17,9 +17,10 @@ class LearnActionServer(object):
 
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
+        save_data_path = get_package_path("migrave_action_recognition", "data", "learned_data")
 
         action_model = ActionModel(model_cfg_file, action_list_file)
-        self.action_learner = ActionLearner(action_model)
+        self.action_learner = ActionLearner(action_model, save_data_path)
 
         self.action_server = actionlib.SimpleActionServer('learn_action', LearnActionAction, self.learn, False)
         self.action_server.start()
@@ -28,7 +29,7 @@ class LearnActionServer(object):
     def learn(self, action):
         rospy.loginfo('Received an action learn request')
         rospy.loginfo('Learning {} actions: {}'.format(action.num_actions, action.action_names))
-        
+
         self.action_learner.learn(action)
 
         result = LearnActionResult()

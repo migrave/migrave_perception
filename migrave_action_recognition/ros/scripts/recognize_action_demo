@@ -14,10 +14,11 @@ if __name__ == "__main__":
 
     model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
     action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
+    rosbag_file = get_package_path("migrave_action_recognition", "data", "bag_files", "test.bag")
 
     action_model = ActionModel(model_cfg_file, action_list_file)
-    action_classifier = ActionClassifier(action_model)
-    
+    action_classifier = ActionClassifier(action_model, rosbag_file, seq_size=40)
+
     qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
 
     try:
@@ -26,13 +27,14 @@ if __name__ == "__main__":
         rospy.sleep(3.)
         rospy.loginfo('Capturing data...')
         qt_speech.publish('Capturing action sequence!')
-        
+
         action_classifier.record = True
         while not rospy.is_shutdown():
             action = action_classifier.classify_action()
             if action is not None:
                 rospy.loginfo('Recognized action: %s, index %d', action[0], action[1])
             rospy.sleep(3.)
-            
+
     except (KeyboardInterrupt, SystemExit):
+        action_classifier.bag.close()
         print('action_recognizer_demo interrupted; exiting...')
