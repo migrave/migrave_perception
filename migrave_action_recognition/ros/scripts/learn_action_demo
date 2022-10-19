@@ -2,6 +2,7 @@
 
 import rospy
 import actionlib
+import argparse
 
 from mas_tools.ros_utils import get_package_path
 from action_recognition.action_learner import ActionLearner
@@ -12,15 +13,15 @@ class LearnActionServer(object):
     '''A server exposing an action for learning bodily action.
     '''
 
-    def __init__(self):
+    def __init__(self, args):
         rospy.loginfo('Initialising Action Learning Server')
 
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
-        save_data_path = get_package_path("migrave_action_recognition", "data", "learned_data")
+        args.save_path = get_package_path("migrave_action_recognition", "data", "learned_data")
 
         action_model = ActionModel(model_cfg_file, action_list_file)
-        self.action_learner = ActionLearner(action_model, save_data_path)
+        self.action_learner = ActionLearner(action_model, **vars(args))
 
         self.action_server = actionlib.SimpleActionServer('learn_action', LearnActionAction, self.learn, False)
         self.action_server.start()
@@ -39,8 +40,19 @@ class LearnActionServer(object):
 
 if __name__ == '__main__':
     rospy.init_node('learn_action_server')
+    parser = argparse.ArgumentParser(description='Learn Action Demo')
+    parser.add_argument('-s', '--save-path', type=str, required=True,
+                        help='Path to directory where learned data to be saved')
+    parser.add_argument('-t', '--nuitrack-skeleton-topic', type=str,
+                        default='/qt_nuitrack_app/skeletons',
+                        help='Name of skeleton topic')
+    parser.add_argument('-n', '--num-seq', type=int, default=25,
+                        help='Number of sequences to be captured')
+    parser.add_argument('-l', '--seq-size', type=int, default=50,
+                        help='Number of sequences to be captured')
 
-    learn_action_server = LearnActionServer()
+    args = parser.parse_args()
+    learn_action_server = LearnActionServer(args)
 
     try:
         while not rospy.is_shutdown():
