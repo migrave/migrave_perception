@@ -19,45 +19,49 @@ class ActionLearner(object):
         self.ske_seq = Queue(maxsize = seq_size)
         self.num_seq = num_seq
         self.seq_size = seq_size
-        self.seq_cnt = 0
 
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
         self.record = False
 
-        self.qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
+        self.qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 1)
 
     def learn(self, action):
         skes_data = []
         num_actions = action.num_actions
 
-        rospy.loginfo('Sleeping for 3 seconds; get into position!')
-        #self.qt_speech.publish('Get into position!')
-        rospy.sleep(3.)
+        for action in action.action_names:
+            seq_cnt = 0
+            rospy.loginfo('Learning {} action'.format(action))
+            self.qt_speech.publish('Please perform {} action'.format(action))
+            rospy.sleep(5.)
 
-        while self.seq_cnt < self.num_seq*num_actions:
-            rospy.loginfo('Capturing data...')
-            #self.qt_speech.publish('Capturing action sequence!')
-            self.record = True
+            while seq_cnt < self.num_seq:
+                rospy.loginfo('Capturing data...')
+                self.qt_speech.publish('Capturing!')
+                self.record = True
 
-            while not self.ske_seq.full():
-                continue
+                while not self.ske_seq.full():
+                    continue
 
-            rospy.loginfo('Sequence: {} captured'.format(self.seq_cnt+1))
-            #self.qt_speech.publish('Sequence: {} captured'.format(self.seq_cnt+1))
-            self.record = False
-            skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
-            self.seq_cnt += 1
-            #self.qt_speech.publish('Get into Position!')
-            rospy.sleep(2.)
+                self.record = False
+                rospy.loginfo('Sequence {} captured'.format(seq_cnt+1))
+                self.qt_speech.publish('Sequence {} captured'.format(seq_cnt+1))
+                rospy.sleep(3.)
+                valid = input("Store demo sequence: [y/n] ")
+                if valid == 'y':
+                    skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
+                    seq_cnt += 1
+
+            input("Press enter to continue...")
 
         rospy.loginfo('Preparing Data...')
         trn_data, val_data = self.prepare_data(skes_data, num_actions)
-        np.savez(self.save_path + '/test.npz', x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
-        return True
-        self.model.train(action, trn_data, val_data)
+        np.savez(self.save_path, x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
 
-        rospy.loginfo('Saving new model...')
-        self.model.save_model(action)
+        #self.model.train(action, trn_data, val_data)
+
+        #rospy.loginfo('Saving new model...')
+        #self.model.save_model(action)
 
         rospy.loginfo('Learning Complete!...')
         return True

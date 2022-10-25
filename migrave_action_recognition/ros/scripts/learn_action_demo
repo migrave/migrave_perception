@@ -41,7 +41,8 @@ class LearnActionServer(object):
 if __name__ == '__main__':
     rospy.init_node('learn_action_server')
     parser = argparse.ArgumentParser(description='Learn Action Demo')
-    parser.add_argument('-s', '--save-path', type=str, required=True,
+    parser.add_argument('-s', '--save-path', type=str,
+                        default='/home/qtrobot',
                         help='Path to directory where learned data to be saved')
     parser.add_argument('-t', '--nuitrack-skeleton-topic', type=str,
                         default='/qt_nuitrack_app/skeletons',
