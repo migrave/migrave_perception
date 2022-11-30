@@ -47,11 +47,11 @@ if __name__ == "__main__":
                         '4': get_package_path("migrave_action_recognition", "config", "exp_action_list3.txt")}
 
     if args.model_type != '1':
-        model_path = get_package_path("migrave_action_recognition", "models", "exp_models" , str(args.participant_id).zfill(3))
+        model_path = get_package_path("migrave_models", "action_recognition", "models", "exp_models" , str(args.participant_id).zfill(3))
     else:
-        model_path = get_package_path("migrave_action_recognition", "models")
+        model_path = get_package_path("migrave_models", "action_recognition", "models")
 
-    args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
+    args.save_path = get_package_path("migrave_models", "action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
 
     action_model = ActionModel(model_cfg_file[args.model_type], action_list_file[args.model_type], model_path)
     action_classifier = ActionClassifier(action_model, **vars(args))

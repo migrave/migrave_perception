@@ -18,9 +18,10 @@ class LearnActionServer(object):
 
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
-        args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
+        model_path = get_package_path("migrave_models", "action_recognition", "models")
+        args.save_path = get_package_path("migrave_models", "action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
 
-        action_model = ActionModel(model_cfg_file, action_list_file)
+        action_model = ActionModel(model_cfg_file, action_list_file, model_path)
         self.action_learner = ActionLearner(action_model, **vars(args))
 
         self.action_server = actionlib.SimpleActionServer('learn_action', LearnActionAction, self.learn, False)

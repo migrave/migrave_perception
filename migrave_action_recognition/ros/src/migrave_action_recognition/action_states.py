@@ -25,8 +25,8 @@ class ContinualActionLearningSM(FTSM):
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
         rosbag_file = get_package_path("migrave_action_recognition", "data", "bag_files")
-        save_data_path = get_package_path("migrave_action_recognition", "data", "learned_data")
-        model_path = get_package_path("migrave_action_recognition", "models")
+        save_data_path = get_package_path("migrave_models", "action_recognition", "data", "learned_data")
+        model_path = get_package_path("migrave_models", "action_recognition", "models")
 
         action_model = ActionModel(model_cfg_file, action_list_file, model_path)
         self.action_classifier = ActionClassifier(action_model, rosbag_file, seq_size=50)
