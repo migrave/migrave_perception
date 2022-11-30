@@ -1,7 +1,7 @@
-num_heads: 10
-heads: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-model_name: "model10.ckpt"
-exemplars_name: "exemplars_model10.pkl"
+num_heads: 11
+heads: [2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 1]
+model_name: "model11_update7.ckpt"
+exemplars_name: "exemplars_model11_update7.pkl"
 
 train_data_args:
   random_choose: False

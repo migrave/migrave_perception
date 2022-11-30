@@ -18,7 +18,7 @@ class LearnActionServer(object):
 
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
-        args.save_path = get_package_path("migrave_action_recognition", "data", "learned_data")
+        args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
 
         action_model = ActionModel(model_cfg_file, action_list_file)
         self.action_learner = ActionLearner(action_model, **vars(args))
@@ -44,6 +44,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--save-path', type=str,
                         default='/home/qtrobot',
                         help='Path to directory where learned data to be saved')
+    parser.add_argument('-i', '--participant-id', type=int, default=0,
+                        help='ID of participant')
     parser.add_argument('-t', '--nuitrack-skeleton-topic', type=str,
                         default='/qt_nuitrack_app/skeletons',
                         help='Name of skeleton topic')
@@ -61,3 +63,4 @@ if __name__ == '__main__':
 
     except (KeyboardInterrupt, SystemExit):
         print('Learning Server interrupted; exiting...')
+

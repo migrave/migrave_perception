@@ -22,9 +22,10 @@ from mas_tools.file_utils import load_yaml_file
 
 
 class ActionModel:
-    def __init__(self, model_cfg, action_list):
+    def __init__(self, model_cfg, action_list, model_path):
         self.model_cfg = load_yaml_file(model_cfg)
-        self.model_path = get_package_path("migrave_action_recognition", "models")
+        
+        self.model_path = model_path
 
         with open(action_list, 'r') as f:
             self.actions = f.read().splitlines()

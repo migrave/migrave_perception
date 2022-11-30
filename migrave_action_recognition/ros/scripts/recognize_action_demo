@@ -1,40 +1,99 @@
 #!/usr/bin/env python3
 
-import numpy as np
-
 import rospy
+import argparse
+import time
+import os
+import numpy as np
 
 from mas_tools.ros_utils import get_package_path
 from action_recognition.action_classifier import ActionClassifier
 from action_recognition.action_model import ActionModel
 from std_msgs.msg import String
 
+actions = {'1': ["Play with Phone", "Hopping", "Rub two Hands", "Hand Waving", "Shake Head", "Drink Water"],
+           '2': ["Play with Phone", "Hopping", "Rub two Hands", "Hand Waving", "Shake Head", "Drink Water", "Talking on Phone", "Cutting Food"],
+           '3': ["Play with Phone", "Hopping", "Rub two Hands", "Hand Waving", "Shake Head", "Drink Water"],
+           '4': ["Play with Phone", "Hopping", "Rub two Hands", "Hand Waving", "Shake Head", "Drink Water", "Talking on Phone", "Cutting Food"]}
+timeout = 30
+
 if __name__ == "__main__":
     rospy.init_node("action_recognizer_demo")
 
-    model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
-    action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
-    rosbag_file = get_package_path("migrave_action_recognition", "data", "bag_files", "test.bag")
+    parser = argparse.ArgumentParser(description='Recognize Action Demo')
+    parser.add_argument('-s', '--save-path', type=str,
+                        default='/home/qtrobot',
+                        help='Path to directory where recognition data to be saved')
+    parser.add_argument('-i', '--participant-id', type=int, default=0,
+                        help='ID of participant')
+    parser.add_argument('-m', '--model-type', type=str, default='1',
+                        help='Model type to use')
+    parser.add_argument('-t', '--nuitrack-skeleton-topic', type=str,
+                        default='/qt_nuitrack_app/skeletons',
+                        help='Name of skeleton topic')
+    parser.add_argument('-l', '--seq-size', type=int, default=50,
+                        help='Number of sequences to be captured')
 
-    action_model = ActionModel(model_cfg_file, action_list_file)
-    action_classifier = ActionClassifier(action_model, rosbag_file, seq_size=40)
+    args = parser.parse_args()
 
-    qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
+    model_cfg_file = {'1': get_package_path("migrave_action_recognition", "config", "action_model_config.yaml"),
+                      '2': get_package_path("migrave_action_recognition", "config", "exp_model1_config.yaml"),
+                      '3': get_package_path("migrave_action_recognition", "config", "exp_model2_config.yaml"),
+                      '4': get_package_path("migrave_action_recognition", "config", "exp_model3_config.yaml")}
+
+    action_list_file = {'1': get_package_path("migrave_action_recognition", "config", "action_list.txt"),
+                        '2': get_package_path("migrave_action_recognition", "config", "exp_action_list1.txt"),
+                        '3': get_package_path("migrave_action_recognition", "config", "exp_action_list2.txt"),
+                        '4': get_package_path("migrave_action_recognition", "config", "exp_action_list3.txt")}
+
+    if args.model_type != '1':
+        model_path = get_package_path("migrave_action_recognition", "models", "exp_models" , str(args.participant_id).zfill(3))
+    else:
+        model_path = get_package_path("migrave_action_recognition", "models")
+
+    args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
+
+    action_model = ActionModel(model_cfg_file[args.model_type], action_list_file[args.model_type], model_path)
+    action_classifier = ActionClassifier(action_model, **vars(args))
+
+    qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 1)
+    rospy.sleep(1.)
+    action_truth_msg = String()
+    action_predict_msg = String()
 
     try:
-        rospy.loginfo('Sleeping for 3 seconds; get into position!')
-        qt_speech.publish('Get into position!')
-        rospy.sleep(3.)
-        rospy.loginfo('Capturing data...')
-        qt_speech.publish('Capturing action sequence!')
+        for action in actions[args.model_type]:
+            rospy.loginfo('Perform {} action. Get into position!'.format(action))
+            qt_speech.publish('Please perform {} action'.format(action))
+            rospy.sleep(5.)
 
-        action_classifier.record = True
-        while not rospy.is_shutdown():
-            action = action_classifier.classify_action()
-            if action is not None:
-                rospy.loginfo('Recognized action: %s, index %d', action[0], action[1])
-            rospy.sleep(3.)
+            action_truth_msg.data = ("Start: {}".format(action))
+            action_classifier.bag.write("/recognize_action/ground_truth", action_truth_msg)
+            action_classifier.reset()
+            rospy.loginfo('Capturing data...')
+            qt_speech.publish('Capturing!')
+            rospy.sleep(1.)
+
+            action_classifier.record = True
+            timeout_start = time.time()
+
+            while time.time() < timeout_start + timeout:
+                pred_action = action_classifier.classify_action()
+                if pred_action is not None:
+                    rospy.loginfo('Recognized action: %s, index %d', pred_action[0], pred_action[1])
+                    action_predict_msg.data = pred_action[0]
+                    action_classifier.bag.write("/recognize_action/predicted", action_predict_msg)
+                rospy.sleep(1.)
+
+            action_classifier.record = False
+            action_truth_msg.data = ("Stop: {}".format(action))
+            action_classifier.bag.write("/recognize_action/ground_truth", action_truth_msg)
+            qt_speech.publish("Finished Capturing. Let me know when you are ready for next action.")
+            np.save(args.save_path + "/recognize_data" + str(args.model_type) + ".npy", np.array(action_classifier.ske_data))
+            input("Press Enter to continue...")
 
     except (KeyboardInterrupt, SystemExit):
         action_classifier.bag.close()
         print('action_recognizer_demo interrupted; exiting...')
+
+    action_classifier.bag.close()

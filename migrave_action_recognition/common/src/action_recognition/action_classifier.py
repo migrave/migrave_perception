@@ -2,7 +2,7 @@
 
 from collections import deque
 import numpy as np
-
+import time
 import rospy
 import rosbag
 
@@ -16,29 +16,29 @@ from CTRGCN.data.ntu.seq_transformation import seq_translation, align_frames
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
 
 class ActionClassifier(object):
-    def __init__(self, action_model, rosbag_file, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", seq_size=50):
+    def __init__(self, action_model, save_path, model_type=1, participant_id=0, 
+                 nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", seq_size=50):
 
         self.model = action_model
-        self.ske_data = np.array([])
+        self.ske_data = []
         self.seq_size = seq_size
 
-        self.record = True
+        self.record = False
 
         self.ske_seq = deque(maxlen = seq_size)
-        self.qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 5)
 
-        self.bag = rosbag.Bag(rosbag_file, 'w')
+        self.bag = rosbag.Bag(save_path + "/recognize_data" + str(model_type) + ".bag", 'w')
         self.topic = nuitrack_skeleton_topic
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
 
     def classify_action(self):
-        self.ske_data = np.array(list(self.ske_seq))
+        sequence = np.array(list(self.ske_seq))
 
-        if self.ske_data.shape[0] == self.seq_size:
+        if sequence.shape[0] == self.seq_size:
             rospy.loginfo('Recognizing action')
-            self.ske_data = self.prepare_data(self.ske_data)
-            action_type = self.model.classify(self.ske_data)
-            self.ske_data = np.array([])
+            sequence = self.prepare_data(sequence)
+            action_type = self.model.classify(sequence)
+            self.ske_data.append(sequence)
 
             return action_type
         else:
@@ -134,4 +134,4 @@ class ActionClassifier(object):
 
     def reset(self):
         self.ske_seq.clear()
-        self.record = True
+        #self.record = True

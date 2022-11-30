@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import rosbag
 import numpy as np
 from queue import Queue
 
@@ -11,7 +12,7 @@ from migrave_skeleton_tools_ros.skeleton_utils import JointUtils
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
 
 class ActionLearner(object):
-    def __init__(self, action_model, save_path, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", num_seq=25, seq_size=50):
+    def __init__(self, action_model, save_path, participant_id=0, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", num_seq=25, seq_size=50):
 
         self.model = action_model
         self.save_path = save_path
@@ -19,6 +20,9 @@ class ActionLearner(object):
         self.ske_seq = Queue(maxsize = seq_size)
         self.num_seq = num_seq
         self.seq_size = seq_size
+
+        self.topic = nuitrack_skeleton_topic
+        self.learning_msg = String()
 
         self.ske_sub = rospy.Subscriber(nuitrack_skeleton_topic, Skeletons, self.process_nt_data)
         self.record = False
@@ -28,9 +32,12 @@ class ActionLearner(object):
     def learn(self, action):
         skes_data = []
         num_actions = action.num_actions
+        self.bag = rosbag.Bag(self.save_path + "/learn_data.bag", 'w')
 
         for action in action.action_names:
             seq_cnt = 0
+            self.learning_msg.data = 'Start learning {} action'.format(action)
+            self.bag.write('/learn_action/action', self.learning_msg)
             rospy.loginfo('Learning {} action'.format(action))
             self.qt_speech.publish('Please perform {} action'.format(action))
             rospy.sleep(5.)
@@ -52,11 +59,13 @@ class ActionLearner(object):
                     skes_data.append(np.array([self.ske_seq.get() for i in range(self.ske_seq.qsize())]))
                     seq_cnt += 1
 
+            self.learning_msg.data = 'Finished learning {} action'.format(action)
+            self.bag.write('/learn_action/action', self.learning_msg)
             input("Press enter to continue...")
 
         rospy.loginfo('Preparing Data...')
         trn_data, val_data = self.prepare_data(skes_data, num_actions)
-        np.savez(self.save_path, x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
+        np.savez(self.save_path + "/learn_data.npz", x_train=trn_data['x'], y_train=trn_data['y'], x_test=val_data['x'], y_test=val_data['y'])
 
         #self.model.train(action, trn_data, val_data)
 
@@ -64,12 +73,15 @@ class ActionLearner(object):
         #self.model.save_model(action)
 
         rospy.loginfo('Learning Complete!...')
+        self.bag.close()
+
         return True
 
     def process_nt_data(self, ske_data_msg):
         if not self.record or not ske_data_msg.skeletons:
             return
 
+        self.bag.write(self.topic, ske_data_msg)
         first_skeleton_msg = ske_data_msg.skeletons[0]
 
         joint_positions = []
