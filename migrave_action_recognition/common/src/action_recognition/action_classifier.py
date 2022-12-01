@@ -16,8 +16,7 @@ from CTRGCN.data.ntu.seq_transformation import seq_translation, align_frames
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
 
 class ActionClassifier(object):
-    def __init__(self, action_model, save_path, model_type=1, participant_id=0, 
-                 nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", seq_size=50):
+    def __init__(self, action_model, save_path, model_type=1, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", seq_size=50):
 
         self.model = action_model
         self.ske_data = []

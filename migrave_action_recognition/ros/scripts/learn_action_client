@@ -1,18 +1,19 @@
 #! /usr/bin/env python3
 
 import rospy
+import argparse
 import actionlib
 
 from migrave_action_recognition.msg import LearnActionAction, LearnActionGoal, LearnActionResult
 
-def learn_action_client():
+def learn_action_client(args):
 
     client = actionlib.SimpleActionClient('learn_action', LearnActionAction)
 
     rospy.loginfo('Initialising Action Learning Client')
     client.wait_for_server()
 
-    goal = LearnActionGoal(num_actions = 4, action_names=["Talking on Phone", "Cutting Food", "Hand Waving", "Hopping"], task_id = -1)
+    goal = LearnActionGoal(num_actions = args.num_actions, action_names=args.action_names, task_id = args.task_id)
 
     client.send_goal(goal)
     rospy.loginfo('Sent action learn request')
@@ -25,7 +26,17 @@ def learn_action_client():
 if __name__ == '__main__':
     try:
         rospy.init_node('learn_action_client')
-        result = learn_action_client()
+        parser = argparse.ArgumentParser(description='Learn Action Client')
+        parser.add_argument('-n', '--num-actions', type=int, default=4,
+                        help='Number of actions to be learnt')
+        parser.add_argument('-a', '--action-names', type=str, nargs='+',
+                        default=["Talking on Phone", "Cutting Food", "Hand Waving", "Hopping"],
+                        help='List of action names to be learnt')
+        parser.add_argument('-i', '--task-id', type=int, default=-1,
+                        help='ID of task id for new actions to be added to')
+
+        args = parser.parse_args()
+        result = learn_action_client(args)
         print("Result: {}".format(result))
 
     except (KeyboardInterrupt, SystemExit):

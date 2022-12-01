@@ -10,27 +10,39 @@ from action_recognition.action_model import ActionModel
 
 from migrave_action_recognition.msg import ContinualActionLearningGoal, ContinualActionLearningResult, ContinualActionLearningFeedback
 
+model_cfg_file = {'1': get_package_path("migrave_action_recognition", "config", "action_model_config.yaml"),
+                  '2': get_package_path("migrave_action_recognition", "config", "exp_model1_config.yaml"),
+                  '3': get_package_path("migrave_action_recognition", "config", "exp_model2_config.yaml"),
+                  '4': get_package_path("migrave_action_recognition", "config", "exp_model3_config.yaml")}
+
+action_list_file = {'1': get_package_path("migrave_action_recognition", "config", "action_list.txt"),
+                    '2': get_package_path("migrave_action_recognition", "config", "exp_action_list1.txt"),
+                    '3': get_package_path("migrave_action_recognition", "config", "exp_action_list2.txt"),
+                    '4': get_package_path("migrave_action_recognition", "config", "exp_action_list3.txt")}
+
 class ContinualActionLearningSM(FTSM):
-    def __init__(self, max_recovery_attempts=1):
-        super(ContinualActionLearningSM, self).__init__('ContinualActionLearning', [], max_recovery_attempts)
+    def __init__(self, args):
+        super(ContinualActionLearningSM, self).__init__('ContinualActionLearning', [], args.max_recovery_attempts)
 
         self.execution_requested = False
         self.goal = None
+        self.seq_size = args.seq_size
+        self.num_seq = args.num_seq
+        self.ske_topic = args.nuitrack_skeleton_topic
+        self.mtype = args.model_type
 
         self.action_fb_pub = rospy.Publisher("/continual_action_learning/feedback", ContinualActionLearningFeedback, queue_size=1)
 
     def init(self):
         rospy.loginfo('Initialising Continual Action Learning Server')
 
-        model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
-        action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
         rosbag_file = get_package_path("migrave_action_recognition", "data", "bag_files")
-        save_data_path = get_package_path("migrave_models", "action_recognition", "data", "learned_data")
-        model_path = get_package_path("migrave_models", "action_recognition", "models")
+        save_data_path = get_package_path("migrave_action_recognition", "data", "learned_data")
+        model_path = get_package_path("migrave_action_recognition", "models")
 
-        action_model = ActionModel(model_cfg_file, action_list_file, model_path)
-        self.action_classifier = ActionClassifier(action_model, rosbag_file, seq_size=50)
-        self.action_learner = ActionLearner(action_model, save_data_path)
+        action_model = ActionModel(model_cfg_file[self.mtype], action_list_file[self.mtype], model_path)
+        self.action_classifier = ActionClassifier(action_model, rosbag_file, self.mtype, self.ske_topic, self.seq_size)
+        self.action_learner = ActionLearner(action_model, save_data_path, self.ske_topic, self.num_seq, self.seq_size)
 
         return FTSMTransitions.INITIALISED
 

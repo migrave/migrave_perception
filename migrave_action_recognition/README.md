@@ -7,8 +7,8 @@ Repository for the Continual Action Learning (CAL) module used in the MigrAVE pr
 * FTSM: https://github.com/migrave/ftsm
 * QT Nuitrack App: https://github.com/luxai-qtrobot/software/tree/master/headers/qt_nuitrack_app
 * MigrAVE Skeleton Tools: https://github.com/migrave/migrave_skeleton_tools
-* CTR-GCN: https://github.com/hwalli92/CTR-GCN
-* FACIL: https://github.com/hwalli92/FACIL
+* CTR-GCN: https://github.com/migrave/CTR-GCN
+* FACIL: https://github.com/migrave/FACIL
 
 ## Usage
 * Launch the node:

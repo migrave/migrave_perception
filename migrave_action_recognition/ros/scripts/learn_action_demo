@@ -10,7 +10,7 @@ from action_recognition.action_model import ActionModel
 from migrave_action_recognition.msg import LearnActionAction, LearnActionResult
 
 class LearnActionServer(object):
-    '''A server exposing an action for learning bodily action.
+    '''A server exposing an action learner for learning bodily action.
     '''
 
     def __init__(self, args):
@@ -18,11 +18,13 @@ class LearnActionServer(object):
 
         model_cfg_file = get_package_path("migrave_action_recognition", "config", "action_model_config.yaml")
         action_list_file = get_package_path("migrave_action_recognition", "config", "action_list.txt")
-        model_path = get_package_path("migrave_models", "action_recognition", "models")
-        args.save_path = get_package_path("migrave_models", "action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
+        model_path = get_package_path("migrave_action_recognition", "models")
+        args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
 
         action_model = ActionModel(model_cfg_file, action_list_file, model_path)
-        self.action_learner = ActionLearner(action_model, **vars(args))
+        args = vars(args)
+        del args['participant_id']
+        self.action_learner = ActionLearner(action_model, **args)
 
         self.action_server = actionlib.SimpleActionServer('learn_action', LearnActionAction, self.learn, False)
         self.action_server.start()
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num-seq', type=int, default=25,
                         help='Number of sequences to be captured')
     parser.add_argument('-l', '--seq-size', type=int, default=50,
-                        help='Number of sequences to be captured')
+                        help='Length of sequences to be captured')
 
     args = parser.parse_args()
     learn_action_server = LearnActionServer(args)

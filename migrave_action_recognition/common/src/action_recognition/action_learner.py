@@ -12,7 +12,7 @@ from migrave_skeleton_tools_ros.skeleton_utils import JointUtils
 ntu_joint_map = [3, 2, 1, 0, 20, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18]
 
 class ActionLearner(object):
-    def __init__(self, action_model, save_path, participant_id=0, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", num_seq=25, seq_size=50):
+    def __init__(self, action_model, save_path, nuitrack_skeleton_topic="/qt_nuitrack_app/skeletons", num_seq=25, seq_size=50):
 
         self.model = action_model
         self.save_path = save_path

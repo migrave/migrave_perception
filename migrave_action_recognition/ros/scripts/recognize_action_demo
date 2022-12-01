@@ -32,7 +32,7 @@ if __name__ == "__main__":
                         default='/qt_nuitrack_app/skeletons',
                         help='Name of skeleton topic')
     parser.add_argument('-l', '--seq-size', type=int, default=50,
-                        help='Number of sequences to be captured')
+                        help='Length of sequences for recognition')
 
     args = parser.parse_args()
 
@@ -47,14 +47,16 @@ if __name__ == "__main__":
                         '4': get_package_path("migrave_action_recognition", "config", "exp_action_list3.txt")}
 
     if args.model_type != '1':
-        model_path = get_package_path("migrave_models", "action_recognition", "models", "exp_models" , str(args.participant_id).zfill(3))
+        model_path = get_package_path("migrave_action_recognition", "models", "exp_models" , str(args.participant_id).zfill(3))
     else:
-        model_path = get_package_path("migrave_models", "action_recognition", "models")
+        model_path = get_package_path("migrave_action_recognition", "models")
 
-    args.save_path = get_package_path("migrave_models", "action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
+    args.save_path = get_package_path("migrave_action_recognition", "data", "exp_data", str(args.participant_id).zfill(3))
 
     action_model = ActionModel(model_cfg_file[args.model_type], action_list_file[args.model_type], model_path)
-    action_classifier = ActionClassifier(action_model, **vars(args))
+    args = vars(args)
+    del args['participant_id']
+    action_classifier = ActionClassifier(action_model, **args)
 
     qt_speech = rospy.Publisher("/qt_robot/speech/say", String, queue_size = 1)
     rospy.sleep(1.)
