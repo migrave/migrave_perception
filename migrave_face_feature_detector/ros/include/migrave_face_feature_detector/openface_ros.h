@@ -81,6 +81,7 @@ class OpenFaceROS
     ros::Publisher pub_faces_;
 
     int max_faces_;
+    std::string camera_name_;
     std::string rgb_image_topic_;
     std::string cam_info_topic_;
     bool image_msg_received_;

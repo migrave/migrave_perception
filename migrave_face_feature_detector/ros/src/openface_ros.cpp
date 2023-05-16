@@ -35,6 +35,8 @@ OpenFaceROS::OpenFaceROS(ros::NodeHandle &nh):
   pub_event_out_ = nh_.advertise<std_msgs::String>("event_out", 1);
   pub_faces_ = nh_.advertise<migrave_ros_msgs::Faces>("faces", 1);
 
+  nh_.param<std::string>("camera_name", camera_name_, "color");
+
   nh_.param<std::string>("cam_info_topic", cam_info_topic_, "/camera/rgb/camera_info");
   cam_info_sub_ = nh_.subscribe(cam_info_topic_, 1, &OpenFaceROS::camInfoCallback, this);
 
@@ -387,6 +389,7 @@ void OpenFaceROS::trackFaces()
     {
       // Estimate head pose and eye gaze
       migrave_ros_msgs::Face face;
+      face.camera_name = camera_name_;
       face.header.frame_id = image_msg_->header.frame_id;
       face.header.stamp = ros::Time::now();
 
