@@ -429,7 +429,12 @@ void OpenFaceROS::trackFaces()
         GazeAnalysis::EstimateGaze(face_models_[model], gaze_direction1, 
                                     fx_, fy_, cx_, cy_, false);
 
-        gaze_angle = GazeAnalysis::GetGazeAngle(gaze_direction0, gaze_direction1);	
+        gaze_angle = GazeAnalysis::GetGazeAngle(gaze_direction0, gaze_direction1);
+
+        auto gaze_avg = (gaze_direction0 + gaze_direction1) / 2;
+        face.gaze_direction.x = gaze_avg.x;
+        face.gaze_direction.y = gaze_avg.y;
+        face.gaze_direction.z = gaze_avg.z;
 
         face.left_gaze.orientation = toQuaternion(M_PI , 0, 0) * 
                                       toQuaternion(gaze_direction0.y, 
